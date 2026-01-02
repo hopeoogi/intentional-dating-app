@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import { authenticatedGet, authenticatedPost } from '@/utils/api';
 
 interface Message {
   id: string;
@@ -39,21 +40,27 @@ export default function ConversationScreen() {
 
   const loadMessages = async () => {
     try {
-      // TODO: Backend Integration - Fetch conversation messages from API
-      // Mock data for now
-      const mockMessages: Message[] = [
-        {
-          id: '1',
-          text: 'Hi! I noticed you love hiking too. What are your favorite trails in the Bay Area?',
-          senderId: 'other',
-          timestamp: new Date(Date.now() - 3600000),
-          isOpener: true,
-        },
-      ];
-      setMessages(mockMessages);
-      setIsFirstMessage(mockMessages.length === 0);
+      console.log('[Conversation] Fetching messages for conversation:', id);
+
+      const response = await authenticatedGet(`/api/messages/${id}`);
+      console.log('[Conversation] Messages fetched:', response);
+
+      // Transform API response to match our interface
+      const transformedMessages: Message[] = (response.messages || []).map((msg: any) => ({
+        id: msg.id,
+        text: msg.content,
+        senderId: msg.senderId,
+        timestamp: new Date(msg.createdAt),
+        isOpener: msg.isOpener || false,
+      }));
+
+      setMessages(transformedMessages);
+      setIsFirstMessage(transformedMessages.length === 0);
+
+      // Mark messages as read
+      await authenticatedPost(`/api/messages/${id}/mark-read`, {});
     } catch (error) {
-      console.error('Failed to load messages:', error);
+      console.error('[Conversation] Failed to load messages:', error);
     }
   };
 
@@ -72,15 +79,25 @@ export default function ConversationScreen() {
 
     try {
       setLoading(true);
+      
+      const messageData = {
+        conversationId: id,
+        content: inputText.trim(),
+      };
+
+      console.log('[Conversation] Sending message:', messageData);
+
+      const response = await authenticatedPost('/api/messages', messageData);
+      console.log('[Conversation] Message sent:', response);
+
       const newMessage: Message = {
-        id: Date.now().toString(),
+        id: response.id || Date.now().toString(),
         text: inputText,
         senderId: 'me',
         timestamp: new Date(),
         isOpener: isFirstMessage,
       };
 
-      // TODO: Backend Integration - Send message to API
       setMessages([...messages, newMessage]);
       setInputText('');
       setIsFirstMessage(false);
@@ -89,7 +106,7 @@ export default function ConversationScreen() {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
     } catch (error) {
-      console.error('Failed to send message:', error);
+      console.error('[Conversation] Failed to send message:', error);
       Alert.alert('Error', 'Failed to send message');
     } finally {
       setLoading(false);
@@ -106,8 +123,15 @@ export default function ConversationScreen() {
           text: 'End',
           style: 'destructive',
           onPress: async () => {
-            // TODO: Backend Integration - End conversation via API
-            router.back();
+            try {
+              console.log('[Conversation] Ending conversation:', id);
+              await authenticatedPost(`/api/conversations/${id}/end`, {});
+              console.log('[Conversation] Conversation ended successfully');
+              router.back();
+            } catch (error) {
+              console.error('[Conversation] Failed to end conversation:', error);
+              Alert.alert('Error', 'Failed to end conversation');
+            }
           },
         },
       ]
@@ -123,17 +147,29 @@ export default function ConversationScreen() {
         {
           text: '12 hours',
           onPress: async () => {
-            // TODO: Backend Integration - Snooze conversation for 12 hours
-            Alert.alert('Snoozed', 'Conversation snoozed for 12 hours');
-            router.back();
+            try {
+              console.log('[Conversation] Snoozing conversation for 12 hours:', id);
+              await authenticatedPost(`/api/conversations/${id}/snooze`, { duration: 12 });
+              Alert.alert('Snoozed', 'Conversation snoozed for 12 hours');
+              router.back();
+            } catch (error) {
+              console.error('[Conversation] Failed to snooze conversation:', error);
+              Alert.alert('Error', 'Failed to snooze conversation');
+            }
           },
         },
         {
           text: '24 hours',
           onPress: async () => {
-            // TODO: Backend Integration - Snooze conversation for 24 hours
-            Alert.alert('Snoozed', 'Conversation snoozed for 24 hours');
-            router.back();
+            try {
+              console.log('[Conversation] Snoozing conversation for 24 hours:', id);
+              await authenticatedPost(`/api/conversations/${id}/snooze`, { duration: 24 });
+              Alert.alert('Snoozed', 'Conversation snoozed for 24 hours');
+              router.back();
+            } catch (error) {
+              console.error('[Conversation] Failed to snooze conversation:', error);
+              Alert.alert('Error', 'Failed to snooze conversation');
+            }
           },
         },
       ]

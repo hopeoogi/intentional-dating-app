@@ -1,5 +1,6 @@
+
 {
-  "name": "Natively",
+  "name": "intentional-dating",
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
@@ -9,7 +10,17 @@
     "web": "EXPO_NO_TELEMETRY=1 expo start --web",
     "build:web": "expo export -p web && npx workbox generateSW workbox-config.js",
     "build:android": "expo prebuild -p android",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "eas:init": "eas init",
+    "eas:build:dev": "eas build --profile development --platform all",
+    "eas:build:preview": "eas build --profile preview --platform all",
+    "eas:build:prod": "eas build --profile production --platform all",
+    "eas:build:ios": "eas build --profile production --platform ios",
+    "eas:build:android": "eas build --profile production --platform android",
+    "eas:submit:ios": "eas submit --platform ios --latest",
+    "eas:submit:android": "eas submit --platform android --latest",
+    "eas:update:dev": "eas update --branch development",
+    "eas:update:prod": "eas update --branch production"
   },
   "dependencies": {
     "@babel/plugin-proposal-export-namespace-from": "^7.18.9",
@@ -26,7 +37,6 @@
     "@types/difflib": "^0.2.7",
     "better-auth": "^1.3.34",
     "difflib": "^0.2.4",
-    "eas": "^0.1.0",
     "expo": "~54.0.1",
     "expo-blur": "^15.0.6",
     "expo-constants": "~18.0.8",

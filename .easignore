@@ -1,0 +1,14 @@
+
+# Files to ignore during EAS build
+node_modules/
+.git/
+.expo/
+.expo-shared/
+*.log
+.DS_Store
+.env.local
+.env.*.local
+google-service-account.json
+chat_history.json
+.hotreload
+.natively/

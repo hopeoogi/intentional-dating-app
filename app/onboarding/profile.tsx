@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { authenticatedPut } from '@/utils/api';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -40,11 +41,23 @@ export default function ProfileScreen() {
 
     try {
       setLoading(true);
-      // TODO: Backend Integration - Save profile data
-      console.log('Profile data:', { name, dateOfBirth, gender, location, bio });
+      
+      const profileData = {
+        name,
+        dateOfBirth: dateOfBirth.toISOString(),
+        gender,
+        location,
+        bio: bio || undefined,
+      };
+
+      console.log('[Profile] Saving profile data:', profileData);
+
+      const response = await authenticatedPut('/api/profile', profileData);
+      console.log('[Profile] Profile saved successfully:', response);
+
       router.push('/onboarding/media');
     } catch (error) {
-      console.error('Profile save error:', error);
+      console.error('[Profile] Profile save error:', error);
       Alert.alert('Error', 'Failed to save profile. Please try again.');
     } finally {
       setLoading(false);

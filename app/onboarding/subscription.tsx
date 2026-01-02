@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,11 +12,32 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import { authenticatedGet, authenticatedPost } from '@/utils/api';
 
 export default function SubscriptionScreen() {
   const router = useRouter();
   const [selectedPlan, setSelectedPlan] = useState('monthly');
   const [loading, setLoading] = useState(false);
+  const [tiers, setTiers] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadSubscriptionTiers();
+  }, []);
+
+  const loadSubscriptionTiers = async () => {
+    try {
+      console.log('[Subscription] Fetching subscription tiers');
+      const response = await authenticatedGet('/api/subscription/tiers');
+      console.log('[Subscription] Tiers fetched:', response);
+      
+      if (response.tiers && response.tiers.length > 0) {
+        setTiers(response.tiers);
+        setSelectedPlan(response.tiers[0].id);
+      }
+    } catch (error) {
+      console.error('[Subscription] Failed to load tiers:', error);
+    }
+  };
 
   const plans = [
     {
@@ -44,13 +65,22 @@ export default function SubscriptionScreen() {
   const handleSubscribe = async () => {
     try {
       setLoading(true);
-      // TODO: Backend Integration - Process subscription payment via IAP
-      console.log('Processing subscription:', selectedPlan);
+      console.log('[Subscription] Processing subscription:', selectedPlan);
+
+      const subscriptionData = {
+        tierId: selectedPlan,
+        // In a real app, you would integrate with Apple/Google IAP here
+        // and pass the receipt/purchase token
+      };
+
+      const response = await authenticatedPost('/api/subscription', subscriptionData);
+      console.log('[Subscription] Subscription created:', response);
+
       Alert.alert('Success', 'Welcome to Intentional!', [
         { text: 'OK', onPress: () => router.replace('/(tabs)') },
       ]);
     } catch (error) {
-      console.error('Subscription error:', error);
+      console.error('[Subscription] Subscription error:', error);
       Alert.alert('Error', 'Failed to process subscription. Please try again.');
     } finally {
       setLoading(false);
@@ -68,7 +98,7 @@ export default function SubscriptionScreen() {
         </View>
 
         <View style={styles.plansContainer}>
-          {plans.map((plan) => (
+          {(tiers.length > 0 ? tiers : plans).map((plan) => (
             <TouchableOpacity
               key={plan.id}
               style={[

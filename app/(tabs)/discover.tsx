@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import { authenticatedGet } from '@/utils/api';
 
 const { width } = Dimensions.get('window');
 
@@ -39,31 +40,25 @@ export default function DiscoverScreen() {
   const loadDailyMatches = async () => {
     try {
       setLoading(true);
-      // TODO: Backend Integration - Fetch daily matches from API
-      // Mock data for now
-      const mockMatches: Match[] = [
-        {
-          id: '1',
-          name: 'Sarah',
-          age: 28,
-          location: 'San Francisco, CA',
-          bio: 'Product designer who loves hiking and trying new restaurants. Looking for someone who values deep conversations and shared adventures.',
-          photos: ['https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400'],
-          status: 'Verified Professional',
-        },
-        {
-          id: '2',
-          name: 'Alex',
-          age: 30,
-          location: 'San Francisco, CA',
-          bio: 'Software engineer and coffee enthusiast. Passionate about building meaningful connections and exploring the city.',
-          photos: ['https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400'],
-          status: 'Entrepreneur',
-        },
-      ];
-      setMatches(mockMatches);
+      console.log('[Discover] Fetching daily matches from API');
+
+      const response = await authenticatedGet('/api/matches');
+      console.log('[Discover] Matches fetched:', response);
+
+      // Transform API response to match our interface
+      const transformedMatches: Match[] = (response.matches || []).map((match: any) => ({
+        id: match.id,
+        name: match.name || 'Unknown',
+        age: match.age || 0,
+        location: match.location || 'Unknown',
+        bio: match.bio || '',
+        photos: match.photos || ['https://via.placeholder.com/400'],
+        status: match.verificationStatus || 'Unverified',
+      }));
+
+      setMatches(transformedMatches);
     } catch (error) {
-      console.error('Failed to load matches:', error);
+      console.error('[Discover] Failed to load matches:', error);
       Alert.alert('Error', 'Failed to load matches');
     } finally {
       setLoading(false);

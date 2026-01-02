@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import { authenticatedGet } from '@/utils/api';
 
 interface Conversation {
   id: string;
@@ -36,35 +37,44 @@ export default function ConversationsScreen() {
   const loadConversations = async () => {
     try {
       setLoading(true);
-      // TODO: Backend Integration - Fetch conversations from API
-      // Mock data for now
-      const mockConversations: Conversation[] = [
-        {
-          id: '1',
-          matchName: 'Sarah',
-          matchPhoto: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
-          lastMessage: 'That sounds amazing! I love hiking too.',
-          timestamp: '2m ago',
-          unread: true,
-          status: 'active',
-        },
-        {
-          id: '2',
-          matchName: 'Alex',
-          matchPhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
-          lastMessage: 'Thanks for the coffee recommendation!',
-          timestamp: '1h ago',
-          unread: false,
-          status: 'active',
-        },
-      ];
-      setConversations(mockConversations);
+      console.log('[Conversations] Fetching conversations from API');
+
+      const response = await authenticatedGet('/api/conversations');
+      console.log('[Conversations] Conversations fetched:', response);
+
+      // Transform API response to match our interface
+      const transformedConversations: Conversation[] = (response.conversations || []).map((conv: any) => ({
+        id: conv.id,
+        matchName: conv.otherUser?.name || 'Unknown',
+        matchPhoto: conv.otherUser?.profilePicture || 'https://via.placeholder.com/100',
+        lastMessage: conv.lastMessage?.content || 'No messages yet',
+        timestamp: formatTimestamp(conv.lastMessage?.createdAt || conv.createdAt),
+        unread: conv.unreadCount > 0,
+        status: conv.status || 'active',
+      }));
+
+      setConversations(transformedConversations);
     } catch (error) {
-      console.error('Failed to load conversations:', error);
+      console.error('[Conversations] Failed to load conversations:', error);
       Alert.alert('Error', 'Failed to load conversations');
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
   };
 
   const handleConversationPress = (conversationId: string) => {

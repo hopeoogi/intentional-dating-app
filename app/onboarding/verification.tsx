@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import { authenticatedPost } from '@/utils/api';
 
 export default function VerificationScreen() {
   const router = useRouter();
@@ -41,11 +42,20 @@ export default function VerificationScreen() {
 
     try {
       setLoading(true);
-      // TODO: Backend Integration - Submit verification application for admin review
-      console.log('Verification data:', { selectedStatus, proofText });
+      
+      const verificationData = {
+        status: selectedStatus,
+        proofText: proofText.trim(),
+      };
+
+      console.log('[Verification] Submitting verification:', verificationData);
+
+      const response = await authenticatedPost('/api/verification/submit', verificationData);
+      console.log('[Verification] Verification submitted successfully:', response);
+
       router.push('/onboarding/pending');
     } catch (error) {
-      console.error('Verification submit error:', error);
+      console.error('[Verification] Verification submit error:', error);
       Alert.alert('Error', 'Failed to submit verification. Please try again.');
     } finally {
       setLoading(false);

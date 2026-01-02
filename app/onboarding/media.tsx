@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import * as ImagePicker from 'expo-image-picker';
+import { BACKEND_URL, getBearerToken } from '@/utils/api';
 
 interface MediaItem {
   uri: string;
@@ -88,11 +89,47 @@ export default function MediaScreen() {
 
     try {
       setLoading(true);
-      // TODO: Backend Integration - Upload media files to storage
-      console.log('Uploading media:', media);
+      console.log('[Media] Uploading media files:', media.length);
+
+      // Upload each media file
+      for (const item of media) {
+        const formData = new FormData();
+        
+        // Create file object from URI
+        const filename = item.uri.split('/').pop() || 'media';
+        const match = /\.(\w+)$/.exec(filename);
+        const type = match ? `${item.type}/${match[1]}` : item.type;
+
+        formData.append('file', {
+          uri: item.uri,
+          name: filename,
+          type,
+        } as any);
+
+        const endpoint = item.type === 'photo' ? '/api/profile/photos' : '/api/profile/videos';
+        
+        const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${await getBearerToken()}`,
+          },
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`[Media] Failed to upload ${item.type}:`, response.status, errorText);
+          throw new Error(`Failed to upload ${item.type}`);
+        }
+
+        const result = await response.json();
+        console.log(`[Media] ${item.type} uploaded successfully:`, result);
+      }
+
+      console.log('[Media] All media uploaded successfully');
       router.push('/onboarding/verification');
     } catch (error) {
-      console.error('Media upload error:', error);
+      console.error('[Media] Media upload error:', error);
       Alert.alert('Error', 'Failed to upload media. Please try again.');
     } finally {
       setLoading(false);

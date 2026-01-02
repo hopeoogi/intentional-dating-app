@@ -5,9 +5,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function PendingScreen() {
   const router = useRouter();
+  const { signOut } = useAuth();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -57,9 +59,13 @@ export default function PendingScreen() {
 
         <TouchableOpacity
           style={buttonStyles.outline}
-          onPress={() => {
-            // TODO: Backend Integration - Sign out user
-            router.replace('/onboarding/signup');
+          onPress={async () => {
+            try {
+              await signOut();
+              router.replace('/onboarding/auth');
+            } catch (error) {
+              console.error('[Pending] Sign out error:', error);
+            }
           }}
         >
           <Text style={commonStyles.buttonTextOutline}>Sign Out</Text>

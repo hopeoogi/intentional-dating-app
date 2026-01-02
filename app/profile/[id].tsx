@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import { authenticatedGet } from '@/utils/api';
 
 const { width } = Dimensions.get('window');
 
@@ -41,25 +42,26 @@ export default function ProfileDetailScreen() {
   const loadProfile = async () => {
     try {
       setLoading(true);
-      // TODO: Backend Integration - Fetch profile from API
-      // Mock data for now
-      const mockProfile: Profile = {
-        id: id as string,
-        name: 'Sarah',
-        age: 28,
-        location: 'San Francisco, CA',
-        bio: 'Product designer who loves hiking and trying new restaurants. Looking for someone who values deep conversations and shared adventures. I believe in being intentional about connections and building something meaningful.',
-        photos: [
-          'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400',
-          'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400',
-          'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400',
-        ],
-        status: 'Verified Professional',
-        interests: ['Hiking', 'Photography', 'Cooking', 'Travel', 'Reading'],
+      console.log('[ProfileDetail] Fetching profile for user:', id);
+
+      const response = await authenticatedGet(`/api/profiles/${id}`);
+      console.log('[ProfileDetail] Profile fetched:', response);
+
+      // Transform API response to match our interface
+      const transformedProfile: Profile = {
+        id: response.id || id as string,
+        name: response.name || 'Unknown',
+        age: response.age || 0,
+        location: response.location || 'Unknown',
+        bio: response.bio || '',
+        photos: response.photos || ['https://via.placeholder.com/400'],
+        status: response.verificationStatus || 'Unverified',
+        interests: response.interests || [],
       };
-      setProfile(mockProfile);
+
+      setProfile(transformedProfile);
     } catch (error) {
-      console.error('Failed to load profile:', error);
+      console.error('[ProfileDetail] Failed to load profile:', error);
       Alert.alert('Error', 'Failed to load profile');
     } finally {
       setLoading(false);

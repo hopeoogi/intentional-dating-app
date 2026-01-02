@@ -34,6 +34,12 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
+  // Log backend URL on startup
+  useEffect(() => {
+    const backendUrl = require('expo-constants').default.expoConfig?.extra?.backendUrl;
+    console.log('[App] Backend URL configured:', backendUrl);
+  }, []);
+
   if (!loaded) {
     return null;
   }
@@ -73,12 +79,15 @@ export default function RootLayout() {
           <GestureHandlerRootView style={{ flex: 1 }}>
             <Stack>
               <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="onboarding/auth" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding/signup" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding/profile" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding/media" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding/verification" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding/pending" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding/subscription" options={{ headerShown: false }} />
+              <Stack.Screen name="auth-popup" options={{ headerShown: false }} />
+              <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen 
                 name="conversation/[id]" 
