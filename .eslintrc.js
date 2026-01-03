@@ -21,18 +21,10 @@ module.exports = {
   ignorePatterns: ['/dist/*', '/public/*', '/babel-plugins/*', '/backend/*'],
   env: {
     browser: true,
-    node: true,
   },
   settings: {
-    'import/resolver': {
-      node: {
-        extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
-        moduleDirectory: ['node_modules', './'],
-      },
-    },
     'import/ignore': [
-      'node_modules',
-      '\\.(coffee|scss|css|less|hbs|svg|json)$',
+      '@bacons/apple-targets',
     ],
   },
   rules: {
@@ -46,12 +38,7 @@ module.exports = {
     "@typescript-eslint/ban-tslint-comment": "off",
     "react/no-unescaped-entities": "off",
     "import/no-unresolved": ["error", {
-      "ignore": [
-        "^expo-router/unstable-native-tabs$",
-        "^expo-router/unstable-",
-        "^@expo/",
-        "^expo-"
-      ]
+      "ignore": ["@bacons/apple-targets"]
     }],
     "prefer-const": "off",
     "react/prop-types": 1,
@@ -65,12 +52,8 @@ module.exports = {
   overrides: [
     {
       files: ['metro.config.js'],
-      env: {
-        node: true,
-      },
       rules: {
-        '@typescript-eslint/no-var-requires': 'off',
-        'no-undef': 'off',
+        '@typescript-eslint/no-var-requires': 'off'
       }
     }
   ]
