@@ -7,127 +7,195 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { authenticatedGet, authenticatedPost } from '@/utils/api';
-import { colors, buttonStyles } from '@/styles/commonStyles';
+import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
-
-interface SubscriptionTier {
-  id: string;
-  name: string;
-  price: string;
-  features: string[];
-}
+import { authenticatedGet, authenticatedPost } from '@/utils/api';
 
 export default function SubscriptionScreen() {
-  const [tiers, setTiers] = useState<SubscriptionTier[]>([]);
-  const [selectedTier, setSelectedTier] = useState<string>('');
-  const [loading, setLoading] = useState(true);
-  const [subscribing, setSubscribing] = useState(false);
   const router = useRouter();
+  const [selectedPlan, setSelectedPlan] = useState('monthly');
+  const [loading, setLoading] = useState(false);
+  const [tiers, setTiers] = useState<any[]>([]);
 
   useEffect(() => {
-    loadTiers();
+    loadSubscriptionTiers();
   }, []);
 
-  const loadTiers = async () => {
+  const loadSubscriptionTiers = async () => {
     try {
-      const data = await authenticatedGet('/api/subscription/tiers');
-      setTiers(data.tiers || []);
-      if (data.tiers?.length > 0) {
-        setSelectedTier(data.tiers[0].id);
+      console.log('[Subscription] Fetching subscription tiers');
+      const response = await authenticatedGet('/api/subscription/tiers');
+      console.log('[Subscription] Tiers fetched:', response);
+      
+      if (response.tiers && response.tiers.length > 0) {
+        setTiers(response.tiers);
+        setSelectedPlan(response.tiers[0].id);
       }
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to load subscription tiers');
+    } catch (error) {
+      console.error('[Subscription] Failed to load tiers:', error);
+    }
+  };
+
+  const plans = [
+    {
+      id: 'monthly',
+      name: 'Monthly',
+      price: '$29.99',
+      period: '/month',
+      features: ['Unlimited daily matches', 'Unlimited conversations', 'Priority support'],
+    },
+    {
+      id: 'annual',
+      name: 'Annual',
+      price: '$199.99',
+      period: '/year',
+      savings: 'Save 44%',
+      features: [
+        'Unlimited daily matches',
+        'Unlimited conversations',
+        'Priority support',
+        'Exclusive events access',
+      ],
+    },
+  ];
+
+  const handleSubscribe = async () => {
+    try {
+      setLoading(true);
+      console.log('[Subscription] Processing subscription:', selectedPlan);
+
+      const subscriptionData = {
+        tierId: selectedPlan,
+        // In a real app, you would integrate with Apple/Google IAP here
+        // and pass the receipt/purchase token
+      };
+
+      const response = await authenticatedPost('/api/subscription', subscriptionData);
+      console.log('[Subscription] Subscription created:', response);
+
+      Alert.alert('Success', 'Welcome to Intentional!', [
+        { text: 'OK', onPress: () => router.replace('/(tabs)') },
+      ]);
+    } catch (error) {
+      console.error('[Subscription] Subscription error:', error);
+      Alert.alert('Error', 'Failed to process subscription. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubscribe = async () => {
-    if (!selectedTier) return;
-
-    setSubscribing(true);
-    try {
-      await authenticatedPost('/api/subscription', {
-        tierId: selectedTier,
-      });
-      Alert.alert(
-        'Success!',
-        'Your subscription is active. Welcome to Intentional!',
-        [
-          {
-            text: 'Start Exploring',
-            onPress: () => router.replace('/(tabs)/discover'),
-          },
-        ]
-      );
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to create subscription');
-    } finally {
-      setSubscribing(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.title}>Choose Your Plan</Text>
-          <Text style={styles.subtitle}>Start your intentional dating journey</Text>
+          <Text style={commonStyles.title}>Choose Your Plan</Text>
+          <Text style={commonStyles.subtitle}>
+            Join our intentional community and start meaningful connections
+          </Text>
         </View>
 
-        {tiers.map((tier) => (
-          <TouchableOpacity
-            key={tier.id}
-            style={[
-              styles.tierCard,
-              selectedTier === tier.id && styles.tierCardSelected,
-            ]}
-            onPress={() => setSelectedTier(tier.id)}
-          >
-            <View style={styles.tierHeader}>
-              <Text style={styles.tierName}>{tier.name}</Text>
-              <Text style={styles.tierPrice}>{tier.price}</Text>
-            </View>
-            {tier.features.map((feature, index) => (
-              <View key={index} style={styles.featureItem}>
-                <IconSymbol name="checkmark.circle.fill" size={20} color={colors.primary} />
-                <Text style={styles.featureText}>{feature}</Text>
+        <View style={styles.plansContainer}>
+          {(tiers.length > 0 ? tiers : plans).map((plan) => (
+            <TouchableOpacity
+              key={plan.id}
+              style={[
+                styles.planCard,
+                selectedPlan === plan.id && styles.planCardSelected,
+              ]}
+              onPress={() => setSelectedPlan(plan.id)}
+            >
+              {plan.savings && (
+                <View style={styles.savingsBadge}>
+                  <Text style={styles.savingsText}>{plan.savings}</Text>
+                </View>
+              )}
+              <Text style={styles.planName}>{plan.name}</Text>
+              <View style={styles.priceContainer}>
+                <Text style={styles.planPrice}>{plan.price}</Text>
+                <Text style={styles.planPeriod}>{plan.period}</Text>
               </View>
-            ))}
-          </TouchableOpacity>
-        ))}
+              <View style={styles.featuresContainer}>
+                {plan.features.map((feature, index) => (
+                  <View key={index} style={styles.featureItem}>
+                    <IconSymbol
+                      ios_icon_name="checkmark.circle.fill"
+                      android_material_icon_name="check-circle"
+                      size={20}
+                      color={colors.success}
+                    />
+                    <Text style={styles.featureText}>{feature}</Text>
+                  </View>
+                ))}
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={styles.benefitsContainer}>
+          <Text style={styles.benefitsTitle}>What you get:</Text>
+          <View style={styles.benefitItem}>
+            <IconSymbol
+              ios_icon_name="heart.fill"
+              android_material_icon_name="favorite"
+              size={24}
+              color={colors.primary}
+            />
+            <Text style={styles.benefitText}>
+              Curated daily matches based on compatibility
+            </Text>
+          </View>
+          <View style={styles.benefitItem}>
+            <IconSymbol
+              ios_icon_name="message.fill"
+              android_material_icon_name="message"
+              size={24}
+              color={colors.primary}
+            />
+            <Text style={styles.benefitText}>
+              Conversation-first approach (no mindless swiping)
+            </Text>
+          </View>
+          <View style={styles.benefitItem}>
+            <IconSymbol
+              ios_icon_name="shield.fill"
+              android_material_icon_name="verified-user"
+              size={24}
+              color={colors.primary}
+            />
+            <Text style={styles.benefitText}>
+              Verified community with manual approval
+            </Text>
+          </View>
+          <View style={styles.benefitItem}>
+            <IconSymbol
+              ios_icon_name="star.fill"
+              android_material_icon_name="star"
+              size={24}
+              color={colors.primary}
+            />
+            <Text style={styles.benefitText}>
+              Premium experience designed for intentional dating
+            </Text>
+          </View>
+        </View>
 
         <TouchableOpacity
-          style={[buttonStyles.primary, subscribing && styles.buttonDisabled]}
+          style={[buttonStyles.primary, loading && styles.buttonDisabled]}
           onPress={handleSubscribe}
-          disabled={subscribing || !selectedTier}
+          disabled={loading}
         >
-          {subscribing ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={buttonStyles.primaryText}>Continue</Text>
-          )}
+          <Text style={commonStyles.buttonText}>
+            {loading ? 'Processing...' : 'Subscribe Now'}
+          </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.skipButton}
-          onPress={() => router.replace('/(tabs)/discover')}
-        >
-          <Text style={styles.skipText}>Skip for now</Text>
-        </TouchableOpacity>
+        <Text style={styles.disclaimer}>
+          By subscribing, you agree to our Terms of Service. Subscription automatically
+          renews unless cancelled 24 hours before the end of the current period.
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -136,80 +204,113 @@ export default function SubscriptionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: colors.background,
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 24,
+    paddingHorizontal: 20,
+    paddingTop: 40,
+    paddingBottom: 20,
   },
   header: {
-    alignItems: 'center',
-    marginTop: 20,
     marginBottom: 32,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
+  plansContainer: {
+    marginBottom: 32,
+    gap: 16,
+  },
+  planCard: {
+    backgroundColor: colors.card,
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderRadius: 16,
+    padding: 20,
+    position: 'relative',
+  },
+  planCardSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.highlight,
+  },
+  savingsBadge: {
+    position: 'absolute',
+    top: -10,
+    right: 20,
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+  },
+  savingsText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  planName: {
+    fontSize: 20,
+    fontWeight: '700',
     color: colors.text,
     marginBottom: 8,
   },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textLight,
-  },
-  tierCard: {
-    backgroundColor: '#F8F8F8',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  tierCardSelected: {
-    borderColor: colors.primary,
-    backgroundColor: '#FFF5F9',
-  },
-  tierHeader: {
+  priceContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'baseline',
     marginBottom: 16,
   },
-  tierName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text,
-  },
-  tierPrice: {
-    fontSize: 20,
-    fontWeight: '600',
+  planPrice: {
+    fontSize: 32,
+    fontWeight: '700',
     color: colors.primary,
+  },
+  planPeriod: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: colors.textSecondary,
+    marginLeft: 4,
+  },
+  featuresContainer: {
+    gap: 8,
   },
   featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    gap: 8,
   },
   featureText: {
-    fontSize: 16,
+    fontSize: 14,
     color: colors.text,
-    marginLeft: 12,
+  },
+  benefitsContainer: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+  },
+  benefitsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 16,
+  },
+  benefitItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  benefitText: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.textSecondary,
+    lineHeight: 20,
   },
   buttonDisabled: {
     opacity: 0.6,
   },
-  skipButton: {
+  disclaimer: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    textAlign: 'center',
     marginTop: 16,
-    alignItems: 'center',
-    padding: 16,
-  },
-  skipText: {
-    fontSize: 16,
-    color: colors.textLight,
+    lineHeight: 18,
   },
 });

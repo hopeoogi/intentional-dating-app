@@ -11,7 +11,6 @@ import { register as registerConversations } from './routes/conversations.js';
 import { register as registerMessages } from './routes/messages.js';
 import { register as registerSubscription } from './routes/subscription.js';
 import { register as registerModeration } from './routes/moderation.js';
-import { register as registerOnboarding } from './routes/onboarding.js';
 
 // Combine both schemas
 const schema = { ...appSchema, ...authSchema };
@@ -37,7 +36,6 @@ registerConversations(app, app.fastify);
 registerMessages(app, app.fastify);
 registerSubscription(app, app.fastify);
 registerModeration(app, app.fastify);
-registerOnboarding(app, app.fastify);
 
 await app.run();
 app.logger.info('Application running');

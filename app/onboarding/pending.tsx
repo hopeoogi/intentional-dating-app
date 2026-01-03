@@ -1,48 +1,74 @@
 
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function PendingScreen() {
   const router = useRouter();
+  const { signOut } = useAuth();
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <View style={styles.content}>
-        <Image
-          source={require('@/assets/images/96e0c1f0-fcef-4b76-b942-74280a3296cb.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-        
+    <SafeAreaView style={styles.container}>
+      <View style={commonStyles.centerContent}>
         <View style={styles.iconContainer}>
-          <IconSymbol ios_icon_name="clock.fill" android_material_icon_name="schedule" size={80} color="#5B4FE9" />
+          <IconSymbol
+            ios_icon_name="clock.fill"
+            android_material_icon_name="schedule"
+            size={80}
+            color={colors.primary}
+          />
         </View>
 
-        <Text style={styles.title}>Application Submitted!</Text>
-        
-        <Text style={styles.message}>
-          Thank you for applying to join Intentional. Our team is reviewing your application.
+        <Text style={commonStyles.title}>Application Under Review</Text>
+        <Text style={[commonStyles.subtitle, styles.subtitle]}>
+          Thank you for applying! Our team is reviewing your application. This
+          typically takes 24-48 hours.
         </Text>
 
-        <Text style={styles.submessage}>
-          We&apos;ll notify you via email once your application has been reviewed. This typically takes 24-48 hours.
-        </Text>
-
-        <View style={styles.infoBox}>
-          <IconSymbol ios_icon_name="info.circle.fill" android_material_icon_name="info" size={24} color="#5B4FE9" />
-          <Text style={styles.infoText}>
-            You&apos;ll be able to complete your subscription and start matching once approved.
-          </Text>
+        <View style={styles.infoCard}>
+          <Text style={styles.infoTitle}>What happens next?</Text>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoBullet}>1.</Text>
+            <Text style={styles.infoText}>
+              Our team reviews your profile and verification details
+            </Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoBullet}>2.</Text>
+            <Text style={styles.infoText}>
+              You&apos;ll receive an email notification once approved
+            </Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoBullet}>3.</Text>
+            <Text style={styles.infoText}>
+              Complete your subscription to activate your account
+            </Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoBullet}>4.</Text>
+            <Text style={styles.infoText}>
+              Start connecting with intentional matches!
+            </Text>
+          </View>
         </View>
 
         <TouchableOpacity
-          style={styles.button}
-          onPress={() => router.replace('/signin')}
+          style={buttonStyles.outline}
+          onPress={async () => {
+            try {
+              await signOut();
+              router.replace('/onboarding/auth');
+            } catch (error) {
+              console.error('[Pending] Sign out error:', error);
+            }
+          }}
         >
-          <Text style={styles.buttonText}>Back to Sign In</Text>
+          <Text style={commonStyles.buttonTextOutline}>Sign Out</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -52,74 +78,43 @@ export default function PendingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  content: {
-    flex: 1,
-    padding: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logo: {
-    width: 60,
-    height: 60,
-    marginBottom: 32,
+    backgroundColor: colors.background,
+    paddingHorizontal: 20,
   },
   iconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#F0EDFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#2C3E50',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  message: {
-    fontSize: 16,
-    color: '#7F8C8D',
-    textAlign: 'center',
-    marginBottom: 16,
-    lineHeight: 24,
-  },
-  submessage: {
-    fontSize: 14,
-    color: '#95A5A6',
+  subtitle: {
     textAlign: 'center',
     marginBottom: 32,
-    lineHeight: 20,
   },
-  infoBox: {
+  infoCard: {
+    width: '100%',
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 32,
+  },
+  infoTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 16,
+  },
+  infoItem: {
     flexDirection: 'row',
-    backgroundColor: '#F0EDFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 32,
-    alignItems: 'center',
+    marginBottom: 12,
+    gap: 12,
+  },
+  infoBullet: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.primary,
   },
   infoText: {
     flex: 1,
-    marginLeft: 12,
     fontSize: 14,
-    color: '#5B4FE9',
+    color: colors.textSecondary,
     lineHeight: 20,
-  },
-  button: {
-    backgroundColor: '#5B4FE9',
-    borderRadius: 12,
-    padding: 18,
-    width: '100%',
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

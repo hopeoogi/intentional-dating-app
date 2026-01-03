@@ -6,8 +6,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useColorScheme, Alert } from "react-native";
-import { useNetworkState } from "expo-network";
+import { useColorScheme } from "react-native";
 import {
   DarkTheme,
   DefaultTheme,
@@ -15,18 +14,16 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
-import { WidgetProvider } from "@/contexts/WidgetContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 
 SplashScreen.preventAutoHideAsync();
 
 export const unstable_settings = {
-  initialRouteName: "(tabs)",
+  initialRouteName: "index",
 };
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const networkState = useNetworkState();
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
@@ -37,17 +34,11 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
-  React.useEffect(() => {
-    if (
-      !networkState.isConnected &&
-      networkState.isInternetReachable === false
-    ) {
-      Alert.alert(
-        "🔌 You are offline",
-        "You can keep using the app! Your changes will be saved locally and synced when you are back online."
-      );
-    }
-  }, [networkState.isConnected, networkState.isInternetReachable]);
+  // Log backend URL on startup
+  useEffect(() => {
+    const backendUrl = require('expo-constants').default.expoConfig?.extra?.backendUrl;
+    console.log('[App] Backend URL configured:', backendUrl);
+  }, []);
 
   if (!loaded) {
     return null;
@@ -57,24 +48,24 @@ export default function RootLayout() {
     ...DefaultTheme,
     dark: false,
     colors: {
-      primary: "rgb(0, 122, 255)",
-      background: "rgb(242, 242, 247)",
-      card: "rgb(255, 255, 255)",
-      text: "rgb(0, 0, 0)",
-      border: "rgb(216, 216, 220)",
-      notification: "rgb(255, 59, 48)",
+      primary: "#E91E63",
+      background: "#FFFFFF",
+      card: "#F8F9FA",
+      text: "#1A1A1A",
+      border: "#E5E7EB",
+      notification: "#E91E63",
     },
   };
 
   const CustomDarkTheme: Theme = {
     ...DarkTheme,
     colors: {
-      primary: "rgb(10, 132, 255)",
-      background: "rgb(1, 1, 1)",
-      card: "rgb(28, 28, 30)",
-      text: "rgb(255, 255, 255)",
-      border: "rgb(44, 44, 46)",
-      notification: "rgb(255, 69, 58)",
+      primary: "#FF6B9D",
+      background: "#1A1A1A",
+      card: "#2A2A2A",
+      text: "#FFFFFF",
+      border: "#3A3A3A",
+      notification: "#FF6B9D",
     },
   };
 
@@ -85,64 +76,38 @@ export default function RootLayout() {
         value={colorScheme === "dark" ? CustomDarkTheme : CustomDefaultTheme}
       >
         <AuthProvider>
-          <WidgetProvider>
-            <GestureHandlerRootView>
-              <Stack>
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="signin" options={{ headerShown: false }} />
-                <Stack.Screen name="signup" options={{ headerShown: false }} />
-                <Stack.Screen
-                  name="onboarding/profile"
-                  options={{ title: "Complete Profile" }}
-                />
-                <Stack.Screen
-                  name="onboarding/media"
-                  options={{ title: "Add Photos & Video" }}
-                />
-                <Stack.Screen
-                  name="onboarding/verification"
-                  options={{ title: "Verification" }}
-                />
-                <Stack.Screen
-                  name="conversation/[id]"
-                  options={{ title: "Conversation" }}
-                />
-                <Stack.Screen
-                  name="conversation/new"
-                  options={{ title: "New Conversation" }}
-                />
-                <Stack.Screen
-                  name="profile/[id]"
-                  options={{ title: "Profile" }}
-                />
-                <Stack.Screen
-                  name="modal"
-                  options={{
-                    presentation: "modal",
-                    title: "Standard Modal",
-                  }}
-                />
-                <Stack.Screen
-                  name="formsheet"
-                  options={{
-                    presentation: "formSheet",
-                    title: "Form Sheet Modal",
-                    sheetGrabberVisible: true,
-                    sheetAllowedDetents: [0.5, 0.8, 1.0],
-                    sheetCornerRadius: 20,
-                  }}
-                />
-                <Stack.Screen
-                  name="transparent-modal"
-                  options={{
-                    presentation: "transparentModal",
-                    headerShown: false,
-                  }}
-                />
-              </Stack>
-              <SystemBars style={"auto"} />
-            </GestureHandlerRootView>
-          </WidgetProvider>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <Stack>
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="onboarding/auth" options={{ headerShown: false }} />
+              <Stack.Screen name="onboarding/signup" options={{ headerShown: false }} />
+              <Stack.Screen name="onboarding/profile" options={{ headerShown: false }} />
+              <Stack.Screen name="onboarding/media" options={{ headerShown: false }} />
+              <Stack.Screen name="onboarding/verification" options={{ headerShown: false }} />
+              <Stack.Screen name="onboarding/pending" options={{ headerShown: false }} />
+              <Stack.Screen name="onboarding/subscription" options={{ headerShown: false }} />
+              <Stack.Screen name="auth-popup" options={{ headerShown: false }} />
+              <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen 
+                name="conversation/[id]" 
+                options={{ 
+                  headerShown: true,
+                  title: "Conversation",
+                  headerBackTitle: "Back"
+                }} 
+              />
+              <Stack.Screen 
+                name="profile/[id]" 
+                options={{ 
+                  headerShown: true,
+                  title: "Profile",
+                  headerBackTitle: "Back"
+                }} 
+              />
+            </Stack>
+            <SystemBars style="auto" />
+          </GestureHandlerRootView>
         </AuthProvider>
       </ThemeProvider>
     </>

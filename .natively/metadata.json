@@ -1,24 +1,9 @@
 {
-  "active_commit": "9881bfd754d44db0d1305c97b49a55fe285c505c",
-  "last_updated": "2026-01-03T03:11:33Z",
+  "active_commit": "f7dd2536aa4cd76cbd14d2cbb030dbddf301ed05",
+  "last_updated": "2026-01-02T19:56:21Z",
   "update_mapping": {
     "1": "845da5e74603d112c9bcd620521479cf0b171d0c",
-    "2": "f7dd2536aa4cd76cbd14d2cbb030dbddf301ed05",
-    "3": "08547398a00b20ac7f68648960cd326e6e2561d8",
-    "4": "7fe1611ed6305f37cdfa252ef353cb351bdb5631",
-    "5": "1f71407704bd186ee5b40700b4a868bd5887ba81",
-    "6": "c5c4ecb335e4a507a149e6d686de8df1469d6920",
-    "7": "46c7384cf98d2fb7741c7e745ea1d64510e17e35",
-    "8": "0ba12279a0b9bb42964e3edfd801afd2227a67dd",
-    "9": "e1dcd84ec975a6e071cc78c012279d2887e39cb0",
-    "10": "6e40931f170c986382b0ddaacb0c034844c2921c",
-    "11": "60668b8c68e496207e7125e2eb829af914d26898",
-    "12": "a61f0ad7a583d7c7463ef7ade5d956526c11333d",
-    "13": "b56dac169edf01be042ee6e2be6c0d88193c38fc",
-    "14": "d551372f9d9f0f2e8a788917b1523d0b0e7aecab",
-    "15": "70c248a1e945b0d1e8343d7b0f72274e24565c28",
-    "16": "1913df23aa5bdb36c7ab1889c5026e4df2498caf",
-    "17": "9881bfd754d44db0d1305c97b49a55fe285c505c"
+    "2": "f7dd2536aa4cd76cbd14d2cbb030dbddf301ed05"
   },
   "version_control_version": "v2"
 }

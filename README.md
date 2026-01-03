@@ -1,62 +1,139 @@
 
-# Intentional Dating App
+# 🌟 Intentional Dating App
 
-A conversation-first dating app built with React Native, Expo 54, and BetterAuth.
+A conversation-first dating app that prioritizes meaningful connections over endless swiping.
 
-## Features
+## ✨ Key Features
 
-### Core Features
-- **Conversation-First Approach**: No swipes or likes - start with meaningful conversations
-- **36-Character Minimum Opener**: Ensures genuine interest and reduces spam
-- **Daily Match Batches**: Curated matches delivered daily to prevent burnout
-- **Manual Verification**: Admin-approved profiles with verified badges
-- **Anti-Ghosting Mechanics**: Reply, End Conversation, or Snooze options
-- **Inbound Limits**: Max 10 pending conversations to prevent overwhelming users
+### 🎯 Intentional Matching
+- **No Swipes, No Likes** - Conversation-first approach
+- **Daily Match Batches** - Curated matches delivered daily
+- **36-Character Minimum Opener** - Ensures thoughtful first messages
+- **Limited New Conversations** - Prevents burnout and promotes quality
 
-### Authentication
-- Email/password with verification
-- Google OAuth
-- Apple OAuth (iOS)
-- Secure session management with BetterAuth
+### 🔐 Verified Community
+- **Manual Approval Process** - Every user is reviewed
+- **Status Badges** - Verified community members
+- **Photo & Video Requirements** - Authentic profiles only
+- **Quality Checks** - Ensures high-quality media
 
-### User Flow
-1. **Sign Up**: Create account with email or social auth
-2. **Profile Setup**: Add name, DOB, sex, location, and bio
-3. **Media Upload**: Upload 3-6 photos and optional video
-4. **Verification**: Submit profile for manual admin review
-5. **Subscription**: Choose subscription tier (or skip)
-6. **Discover**: View daily matches and start conversations
+### 💬 Anti-Ghosting Mechanics
+- **Reply, End, or Snooze** - Close the loop on every conversation
+- **No Ghosting** - Users must respond or end conversations
+- **Snooze Option** - Reply later without pressure
+- **Conversation Limits** - Prevents overwhelming message floods
 
-## Tech Stack
+### 🛡️ Safety & Moderation
+- **Block & Report** - User safety tools
+- **Admin Panel** - Manual review and moderation
+- **Inbound Controls** - Limit new conversation requests
+- **Pending Requests Inbox** - Manage incoming messages
 
-- **Frontend**: React Native + Expo 54
-- **Backend**: Fastify + PostgreSQL + Drizzle ORM
-- **Authentication**: BetterAuth
-- **Deployment**: Specular (Backend), EAS (Mobile)
+### 💎 Premium Experience
+- **Subscription-Based** - After approval, activate with IAP
+- **Referral Code Bypass** - Invite-only access option
+- **Multiple Tiers** - Different feature levels
 
-## Backend API
+---
 
-Backend URL: `https://6ytjugugmhrw5w5dguny2u79uz83r3tz.app.specular.dev`
+## 🚀 Deployment
 
-### Key Endpoints
-- `/api/auth/*` - Authentication (BetterAuth)
-- `/api/profile` - User profile management
-- `/api/matches` - Daily match batches
-- `/api/conversations` - Conversation management
-- `/api/messages` - Messaging system
-- `/api/verification` - Profile verification
-- `/api/subscription` - Subscription management
-- `/api/admin/*` - Admin panel APIs
+This app is ready to deploy to iOS App Store and Google Play Store using Expo Application Services (EAS).
 
-## Development
+### Quick Start
+
+1. **Install EAS CLI**
+   ```bash
+   npm install -g eas-cli
+   ```
+
+2. **Login to Expo**
+   ```bash
+   eas login
+   ```
+
+3. **Initialize Project**
+   ```bash
+   npm run eas:init
+   ```
+
+4. **Build & Deploy**
+   ```bash
+   # Preview build (testing)
+   npm run eas:build:preview
+   
+   # Production build
+   npm run eas:build:prod
+   
+   # Submit to stores
+   npm run eas:submit:ios
+   npm run eas:submit:android
+   ```
+
+### 📚 Deployment Documentation
+
+- **[Complete Deployment Guide](DEPLOYMENT_GUIDE.md)** - Step-by-step instructions
+- **[Pre-Deployment Checklist](PRE_DEPLOYMENT_CHECK.md)** - Verify everything is ready
+- **[Deployment Checklist](DEPLOYMENT_CHECKLIST.md)** - Track your progress
+
+---
+
+## 🏗️ Architecture
+
+### Frontend
+- **React Native** with Expo SDK 54
+- **Expo Router** for file-based navigation
+- **BetterAuth** for authentication (email, Google, Apple)
+- **TypeScript** for type safety
+
+### Backend
+- **Building at:** `https://6ytjugugmhrw5w5dguny2u79uz83r3tz.app.specular.dev`
+- **Features:**
+  - User authentication & OAuth
+  - Profile management
+  - Photo/video upload
+  - Verification system
+  - Admin approval workflow
+  - Subscription/payment handling
+  - Daily matching algorithm
+  - Conversation system
+  - Blocking & reporting
+  - Admin panel
+
+---
+
+## 📱 App Structure
+
+### Onboarding Flow
+1. **Signup** - Email/phone verification
+2. **Profile Creation** - Basic info (name, DOB, location)
+3. **Media Upload** - Photos & videos with quality checks
+4. **Verification** - Status badges & proof submission
+5. **Pending Approval** - Manual admin review
+6. **Subscription** - IAP activation after approval
+
+### Main App
+- **Discover Tab** - Daily matches with profile viewer
+- **Conversations Tab** - Active, snoozed, and ended chats
+- **Profile Tab** - User settings and account management
+
+### Conversation Mechanics
+- **36-Character Minimum** - Thoughtful openers required
+- **Reply** - Continue the conversation
+- **End Conversation** - Close gracefully (won't see again)
+- **Snooze** - Reply later (12h or 24h)
+
+---
+
+## 🛠️ Development
 
 ### Prerequisites
 - Node.js 18+
+- npm or yarn
 - Expo CLI
 - iOS Simulator (Mac) or Android Emulator
 
-### Installation
-
+### Setup
 ```bash
 # Install dependencies
 npm install
@@ -74,154 +151,119 @@ npm run android
 npm run web
 ```
 
-### Building for Production
-
-#### iOS Build
-```bash
-# Install EAS CLI
-npm install -g eas-cli
-
-# Login to Expo
-eas login
-
-# Configure project
-eas build:configure
-
-# Build for iOS
-eas build --platform ios --profile production
-
-# Submit to App Store
-eas submit --platform ios
+### Project Structure
+```
+intentional-dating/
+├── app/                    # Expo Router pages
+│   ├── (tabs)/            # Main app tabs
+│   ├── onboarding/        # Onboarding flow
+│   ├── conversation/      # Chat screens
+│   └── profile/           # Profile screens
+├── components/            # Reusable components
+├── contexts/              # React contexts (Auth, etc.)
+├── lib/                   # Libraries (auth client)
+├── styles/                # Common styles
+├── utils/                 # Utilities (API, error logging)
+├── app.json               # Expo configuration
+├── eas.json               # EAS Build configuration
+└── package.json           # Dependencies & scripts
 ```
 
-#### Android Build
-```bash
-# Build for Android
-eas build --platform android --profile production
+---
 
-# Submit to Play Store
-eas submit --platform android
-```
-
-## Configuration
+## 🔧 Configuration
 
 ### Environment Variables
-Backend URL is configured in `app.json`:
+The backend URL is configured in `app.json`:
 ```json
-{
-  "expo": {
-    "extra": {
-      "backendUrl": "https://6ytjugugmhrw5w5dguny2u79uz83r3tz.app.specular.dev"
-    }
-  }
+"extra": {
+  "backendUrl": "https://6ytjugugmhrw5w5dguny2u79uz83r3tz.app.specular.dev"
 }
 ```
 
-### iOS Permissions
-Required permissions are configured in `app.json`:
-- Camera access (for profile photos)
-- Photo library access (for uploading photos)
-- Location access (for showing nearby matches)
+### Bundle Identifiers
+- **iOS:** `com.intentionaldating.app`
+- **Android:** `com.intentionaldating.app`
 
-### Android Permissions
-Required permissions are configured in `app.json`:
-- CAMERA
-- READ_EXTERNAL_STORAGE
-- WRITE_EXTERNAL_STORAGE
-- ACCESS_FINE_LOCATION
-- ACCESS_COARSE_LOCATION
+### Permissions
+- Camera (profile photos/videos)
+- Photo Library (upload media)
+- Microphone (video recording)
 
-## Project Structure
+---
 
-```
-├── app/                    # Expo Router screens
-│   ├── (tabs)/            # Main tab navigation
-│   │   ├── discover.tsx   # Daily matches
-│   │   ├── conversations.tsx  # Chat list
-│   │   └── profile.tsx    # User profile
-│   ├── onboarding/        # Onboarding flow
-│   │   ├── signup.tsx     # Account creation
-│   │   ├── profile.tsx    # Profile setup
-│   │   ├── media.tsx      # Photo/video upload
-│   │   ├── verification.tsx  # Submit for review
-│   │   └── subscription.tsx  # Choose plan
-│   ├── conversation/      # Conversation screens
-│   │   └── [id].tsx       # Chat screen
-│   ├── profile/           # Profile screens
-│   │   └── [id].tsx       # View other user's profile
-│   ├── welcome.tsx        # Welcome screen
-│   ├── signin.tsx         # Sign in screen
-│   └── _layout.tsx        # Root layout with auth
-├── components/            # Reusable components
-├── contexts/              # React contexts
-│   └── AuthContext.tsx    # Authentication context
-├── lib/                   # Libraries
-│   └── auth.ts            # BetterAuth client
-├── utils/                 # Utilities
-│   └── api.ts             # API client
-├── styles/                # Styles
-│   └── commonStyles.ts    # Common styles
-└── assets/                # Images, fonts, etc.
-```
+## 📦 Available Scripts
 
-## Key Features Implementation
+### Development
+- `npm run dev` - Start development server with tunnel
+- `npm run ios` - Run on iOS simulator
+- `npm run android` - Run on Android emulator
+- `npm run web` - Run on web browser
 
-### 36-Character Minimum Opener
-Enforced in `app/conversation/[id].tsx`:
-```typescript
-if (messages.length === 0 && newMessage.length < 36) {
-  Alert.alert('Opener Too Short', 'Your first message must be at least 36 characters...');
-  return;
-}
-```
+### Building
+- `npm run eas:build:dev` - Development build
+- `npm run eas:build:preview` - Preview build (testing)
+- `npm run eas:build:prod` - Production build (both platforms)
+- `npm run eas:build:ios` - iOS production build
+- `npm run eas:build:android` - Android production build
 
-### Daily Match Batches
-Backend generates daily matches based on:
-- Location proximity
-- Age preferences
-- Interests
-- Activity level
+### Deployment
+- `npm run eas:submit:ios` - Submit to App Store
+- `npm run eas:submit:android` - Submit to Google Play
 
-### Anti-Ghosting Mechanics
-Users must:
-- Reply to messages
-- End conversation (won't see them again)
-- Snooze for 12h/24h
+### Updates
+- `npm run eas:update:dev` - Push OTA update to development
+- `npm run eas:update:prod` - Push OTA update to production
 
-### Inbound Limits
-- Max 10 pending conversation requests
-- Daily new conversation caps
-- "Accepting new chats" toggle
+---
 
-## Troubleshooting
+## 🎨 Design Philosophy
 
-### iOS Build Errors
-If you encounter iOS build errors:
-1. Ensure Xcode is up to date
-2. Clear build cache: `expo prebuild --clean`
-3. Check bundle identifier is unique
-4. Verify all required permissions are in `app.json`
+### Intentional by Design
+- **Conversation-First** - No swipes, no likes, just conversations
+- **Quality Over Quantity** - Limited matches promote meaningful connections
+- **Anti-Ghosting** - Close the loop on every conversation
+- **Verified Community** - Manual approval ensures quality
 
-### Android Build Errors
-If you encounter Android build errors:
-1. Ensure Android Studio is installed
-2. Check Java version (11 or 17)
-3. Clear gradle cache: `cd android && ./gradlew clean`
+### User Experience
+- **Clean, Breathable Design** - Modern and minimalistic
+- **Smooth Animations** - Polished interactions
+- **Dark Mode Support** - Comfortable viewing in any light
+- **Accessible** - Designed for all users
 
-### Backend Connection Issues
-If the app can't connect to backend:
-1. Check backend URL in `app.json`
-2. Verify backend is running: Visit backend URL in browser
-3. Check network connectivity
-4. Review API logs in console
+---
 
-## Support
+## 🔒 Privacy & Security
 
-For issues or questions:
-1. Check the troubleshooting section
-2. Review backend API documentation
-3. Check Expo documentation: https://docs.expo.dev
+- **Manual Approval** - Every user is reviewed before activation
+- **Verified Profiles** - Photo/video requirements with quality checks
+- **Block & Report** - User safety tools
+- **Secure Authentication** - BetterAuth with OAuth support
+- **Data Protection** - Secure backend with proper authentication
 
-## License
+---
 
-Proprietary - All rights reserved
+## 📄 License
+
+Private - All rights reserved
+
+---
+
+## 🆘 Support
+
+For deployment help, see:
+- [Deployment Guide](DEPLOYMENT_GUIDE.md)
+- [Pre-Deployment Checklist](PRE_DEPLOYMENT_CHECK.md)
+- [EAS Documentation](https://docs.expo.dev/eas/)
+
+---
+
+## 🎉 Ready to Launch!
+
+Your Intentional Dating app is fully configured and ready for deployment. Follow the deployment guide to get started!
+
+**Next Steps:**
+1. Review [Pre-Deployment Checklist](PRE_DEPLOYMENT_CHECK.md)
+2. Follow [Deployment Guide](DEPLOYMENT_GUIDE.md)
+3. Deploy to iOS and Android stores
+4. Launch your intentional dating community! 🚀

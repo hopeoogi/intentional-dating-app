@@ -42,7 +42,6 @@ export const userProfiles = pgTable(
     subscriptionExpiresAt: timestamp("subscription_expires_at"),
     lastActiveAt: timestamp("last_active_at"),
     isAcceptingChats: boolean("is_accepting_chats").default(true),
-    onboardingStatus: varchar("onboarding_status", { length: 50 }).default("account_created"), // account_created, profile_completed, media_uploaded, verification_submitted, approved, subscribed, active
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()

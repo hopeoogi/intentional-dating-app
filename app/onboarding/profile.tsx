@@ -10,47 +10,26 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
+import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { authenticatedPut } from '@/utils/api';
-import { colors, buttonStyles } from '@/styles/commonStyles';
-import { IconSymbol } from '@/components/IconSymbol';
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const [name, setName] = useState('');
-  const [dateOfBirth, setDateOfBirth] = useState(new Date(2000, 0, 1));
+  const [dateOfBirth, setDateOfBirth] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [sex, setSex] = useState<'male' | 'female' | 'other' | ''>('');
+  const [gender, setGender] = useState('');
   const [location, setLocation] = useState('');
   const [bio, setBio] = useState('');
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
-
-  const requestLocationPermission = async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
-        const location = await Location.getCurrentPositionAsync({});
-        const address = await Location.reverseGeocodeAsync({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        });
-        if (address[0]) {
-          setLocation(`${address[0].city}, ${address[0].region}`);
-        }
-      }
-    } catch (error) {
-      console.error('Location error:', error);
-    }
-  };
 
   const handleContinue = async () => {
-    if (!name || !sex || !location || !bio) {
-      Alert.alert('Error', 'Please fill in all fields');
+    if (!name || !gender || !location) {
+      Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
 
@@ -60,18 +39,26 @@ export default function ProfileScreen() {
       return;
     }
 
-    setLoading(true);
     try {
-      await authenticatedPut('/api/profile', {
+      setLoading(true);
+      
+      const profileData = {
         name,
         dateOfBirth: dateOfBirth.toISOString(),
-        sex,
+        gender,
         location,
-        bio,
-      });
+        bio: bio || undefined,
+      };
+
+      console.log('[Profile] Saving profile data:', profileData);
+
+      const response = await authenticatedPut('/api/profile', profileData);
+      console.log('[Profile] Profile saved successfully:', response);
+
       router.push('/onboarding/media');
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to save profile');
+    } catch (error) {
+      console.error('[Profile] Profile save error:', error);
+      Alert.alert('Error', 'Failed to save profile. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -81,107 +68,94 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+        style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
-            <Text style={styles.title}>Create Your Profile</Text>
-            <Text style={styles.subtitle}>Tell us about yourself</Text>
+            <Text style={commonStyles.title}>Create Your Profile</Text>
+            <Text style={commonStyles.subtitle}>
+              Tell us a bit about yourself
+            </Text>
           </View>
 
           <View style={styles.form}>
+            <Text style={styles.label}>Name *</Text>
             <TextInput
-              style={styles.input}
-              placeholder="Full Name"
+              style={commonStyles.input}
+              placeholder="Your name"
+              placeholderTextColor={colors.textSecondary}
               value={name}
               onChangeText={setName}
-              editable={!loading}
+              autoCapitalize="words"
             />
 
+            <Text style={styles.label}>Date of Birth *</Text>
             <TouchableOpacity
-              style={styles.input}
+              style={[commonStyles.input, styles.dateButton]}
               onPress={() => setShowDatePicker(true)}
-              disabled={loading}
             >
-              <Text style={styles.inputText}>
-                Date of Birth: {dateOfBirth.toLocaleDateString()}
+              <Text style={styles.dateText}>
+                {dateOfBirth.toLocaleDateString()}
               </Text>
             </TouchableOpacity>
-
             {showDatePicker && (
               <DateTimePicker
                 value={dateOfBirth}
                 mode="date"
                 display="spinner"
                 onChange={(event, selectedDate) => {
-                  setShowDatePicker(false);
-                  if (selectedDate) setDateOfBirth(selectedDate);
+                  setShowDatePicker(Platform.OS === 'ios');
+                  if (selectedDate) {
+                    setDateOfBirth(selectedDate);
+                  }
                 }}
                 maximumDate={new Date()}
               />
             )}
 
-            <Text style={styles.label}>Sex</Text>
-            <View style={styles.sexButtons}>
-              <TouchableOpacity
-                style={[styles.sexButton, sex === 'male' && styles.sexButtonActive]}
-                onPress={() => setSex('male')}
-                disabled={loading}
-              >
-                <Text style={[styles.sexButtonText, sex === 'male' && styles.sexButtonTextActive]}>
-                  Male
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.sexButton, sex === 'female' && styles.sexButtonActive]}
-                onPress={() => setSex('female')}
-                disabled={loading}
-              >
-                <Text style={[styles.sexButtonText, sex === 'female' && styles.sexButtonTextActive]}>
-                  Female
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.sexButton, sex === 'other' && styles.sexButtonActive]}
-                onPress={() => setSex('other')}
-                disabled={loading}
-              >
-                <Text style={[styles.sexButtonText, sex === 'other' && styles.sexButtonTextActive]}>
-                  Other
-                </Text>
-              </TouchableOpacity>
+            <Text style={styles.label}>Gender *</Text>
+            <View style={styles.genderContainer}>
+              {['Man', 'Woman', 'Non-binary', 'Other'].map((option) => (
+                <TouchableOpacity
+                  key={option}
+                  style={[
+                    styles.genderButton,
+                    gender === option && styles.genderButtonSelected,
+                  ]}
+                  onPress={() => setGender(option)}
+                >
+                  <Text
+                    style={[
+                      styles.genderButtonText,
+                      gender === option && styles.genderButtonTextSelected,
+                    ]}
+                  >
+                    {option}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
 
-            <View style={styles.locationContainer}>
-              <TextInput
-                style={[styles.input, styles.locationInput]}
-                placeholder="Location (City, State)"
-                value={location}
-                onChangeText={setLocation}
-                editable={!loading}
-              />
-              <TouchableOpacity
-                style={styles.locationButton}
-                onPress={requestLocationPermission}
-                disabled={loading}
-              >
-                <IconSymbol
-                  ios_icon_name="location.fill"
-                  android_material_icon_name="location-on"
-                  size={24}
-                  color={colors.primary}
-                />
-              </TouchableOpacity>
-            </View>
-
+            <Text style={styles.label}>Location *</Text>
             <TextInput
-              style={[styles.input, styles.bioInput]}
-              placeholder="Bio (Tell us about yourself)"
+              style={commonStyles.input}
+              placeholder="City, State"
+              placeholderTextColor={colors.textSecondary}
+              value={location}
+              onChangeText={setLocation}
+              autoCapitalize="words"
+            />
+
+            <Text style={styles.label}>Bio (Optional)</Text>
+            <TextInput
+              style={[commonStyles.input, styles.bioInput]}
+              placeholder="Tell us about yourself..."
+              placeholderTextColor={colors.textSecondary}
               value={bio}
               onChangeText={setBio}
               multiline
               numberOfLines={4}
-              editable={!loading}
+              textAlignVertical="top"
             />
 
             <TouchableOpacity
@@ -189,11 +163,9 @@ export default function ProfileScreen() {
               onPress={handleContinue}
               disabled={loading}
             >
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={buttonStyles.primaryText}>Continue</Text>
-              )}
+              <Text style={commonStyles.buttonText}>
+                {loading ? 'Saving...' : 'Continue'}
+              </Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -205,100 +177,62 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  keyboardView: {
-    flex: 1,
+    backgroundColor: colors.background,
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 24,
+    paddingHorizontal: 20,
+    paddingTop: 40,
+    paddingBottom: 20,
   },
   header: {
-    alignItems: 'center',
-    marginTop: 20,
     marginBottom: 32,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
+  form: {
+    marginBottom: 24,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
     color: colors.text,
     marginBottom: 8,
   },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textLight,
+  dateButton: {
+    justifyContent: 'center',
   },
-  form: {
-    width: '100%',
-  },
-  input: {
-    backgroundColor: '#F8F8F8',
-    borderRadius: 12,
-    padding: 16,
+  dateText: {
     fontSize: 16,
     color: colors.text,
+  },
+  genderContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     marginBottom: 16,
+    gap: 8,
+  },
+  genderButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  inputText: {
-    fontSize: 16,
-    color: colors.text,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 12,
-  },
-  sexButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  sexButton: {
-    flex: 1,
-    backgroundColor: '#F8F8F8',
-    borderRadius: 12,
-    padding: 16,
-    marginHorizontal: 4,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: colors.border,
-  },
-  sexButtonActive: {
+  genderButtonSelected: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
-  sexButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textLight,
+  genderButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.text,
   },
-  sexButtonTextActive: {
+  genderButtonTextSelected: {
     color: '#FFFFFF',
   },
-  locationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  locationInput: {
-    flex: 1,
-    marginBottom: 0,
-    marginRight: 8,
-  },
-  locationButton: {
-    backgroundColor: '#F8F8F8',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
   bioInput: {
-    height: 120,
-    textAlignVertical: 'top',
+    height: 100,
+    paddingTop: 14,
   },
   buttonDisabled: {
     opacity: 0.6,

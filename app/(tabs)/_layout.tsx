@@ -1,19 +1,21 @@
 
-import { Tabs } from 'expo-router';
 import React from 'react';
-import { IconSymbol } from '@/components/IconSymbol';
+import { Tabs } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
+import { IconSymbol } from '@/components/IconSymbol';
 
-export default function TabLayout() {
+export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
-        headerShown: false,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
-          backgroundColor: colors.card,
+          backgroundColor: colors.background,
           borderTopColor: colors.border,
+          borderTopWidth: 1,
         },
+        headerShown: false,
       }}
     >
       <Tabs.Screen
@@ -24,7 +26,7 @@ export default function TabLayout() {
             <IconSymbol
               ios_icon_name="heart.fill"
               android_material_icon_name="favorite"
-              size={28}
+              size={24}
               color={color}
             />
           ),
@@ -38,7 +40,7 @@ export default function TabLayout() {
             <IconSymbol
               ios_icon_name="message.fill"
               android_material_icon_name="message"
-              size={28}
+              size={24}
               color={color}
             />
           ),
@@ -52,7 +54,7 @@ export default function TabLayout() {
             <IconSymbol
               ios_icon_name="person.fill"
               android_material_icon_name="person"
-              size={28}
+              size={24}
               color={color}
             />
           ),

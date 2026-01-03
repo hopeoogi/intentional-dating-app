@@ -3,38 +3,60 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { authenticatedPost } from '@/utils/api';
-import { colors, buttonStyles } from '@/styles/commonStyles';
+import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import { authenticatedPost } from '@/utils/api';
 
 export default function VerificationScreen() {
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [proofText, setProofText] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const statuses = [
+    { id: 'verified', label: 'Verified Professional', icon: 'verified' },
+    { id: 'student', label: 'Student', icon: 'school' },
+    { id: 'entrepreneur', label: 'Entrepreneur', icon: 'business' },
+    { id: 'creative', label: 'Creative', icon: 'palette' },
+    { id: 'other', label: 'Other', icon: 'person' },
+  ];
 
   const handleSubmit = async () => {
-    setLoading(true);
+    if (!selectedStatus) {
+      Alert.alert('Error', 'Please select a status');
+      return;
+    }
+
+    if (!proofText.trim()) {
+      Alert.alert('Error', 'Please provide verification details');
+      return;
+    }
+
     try {
-      await authenticatedPost('/api/verification/submit', {});
-      Alert.alert(
-        'Application Submitted',
-        'Your profile has been submitted for review. We\'ll notify you once approved!',
-        [
-          {
-            text: 'OK',
-            onPress: () => router.replace('/onboarding/subscription'),
-          },
-        ]
-      );
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to submit application');
+      setLoading(true);
+      
+      const verificationData = {
+        status: selectedStatus,
+        proofText: proofText.trim(),
+      };
+
+      console.log('[Verification] Submitting verification:', verificationData);
+
+      const response = await authenticatedPost('/api/verification/submit', verificationData);
+      console.log('[Verification] Verification submitted successfully:', response);
+
+      router.push('/onboarding/pending');
+    } catch (error) {
+      console.error('[Verification] Verification submit error:', error);
+      Alert.alert('Error', 'Failed to submit verification. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -44,36 +66,73 @@ export default function VerificationScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <IconSymbol name="checkmark.seal.fill" size={80} color={colors.primary} />
-          <Text style={styles.title}>Verification</Text>
-          <Text style={styles.subtitle}>
-            Submit your profile for manual review to join our verified community
+          <Text style={commonStyles.title}>Verification</Text>
+          <Text style={commonStyles.subtitle}>
+            Help us verify your identity and build a trusted community
           </Text>
         </View>
 
-        <View style={styles.infoCard}>
-          <View style={styles.infoItem}>
-            <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
-            <Text style={styles.infoText}>Profile reviewed by real people</Text>
-          </View>
-          <View style={styles.infoItem}>
-            <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
-            <Text style={styles.infoText}>Verified badge on your profile</Text>
-          </View>
-          <View style={styles.infoItem}>
-            <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
-            <Text style={styles.infoText}>Access to premium features</Text>
-          </View>
-          <View style={styles.infoItem}>
-            <IconSymbol name="checkmark.circle.fill" size={24} color={colors.success} />
-            <Text style={styles.infoText}>Safe and trusted community</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Select Your Status</Text>
+          <View style={styles.statusGrid}>
+            {statuses.map((status) => (
+              <TouchableOpacity
+                key={status.id}
+                style={[
+                  styles.statusCard,
+                  selectedStatus === status.id && styles.statusCardSelected,
+                ]}
+                onPress={() => setSelectedStatus(status.id)}
+              >
+                <IconSymbol
+                  ios_icon_name={status.icon}
+                  android_material_icon_name={status.icon as any}
+                  size={32}
+                  color={
+                    selectedStatus === status.id ? colors.primary : colors.textSecondary
+                  }
+                />
+                <Text
+                  style={[
+                    styles.statusLabel,
+                    selectedStatus === status.id && styles.statusLabelSelected,
+                  ]}
+                >
+                  {status.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
-        <View style={styles.noteCard}>
-          <IconSymbol name="info.circle.fill" size={24} color={colors.warning} />
-          <Text style={styles.noteText}>
-            Review typically takes 24-48 hours. You'll receive an email once your profile is approved.
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Verification Details</Text>
+          <Text style={commonStyles.textSecondary}>
+            Provide information to help us verify your status (e.g., LinkedIn profile,
+            company name, university, portfolio link)
+          </Text>
+          <TextInput
+            style={[commonStyles.input, styles.proofInput]}
+            placeholder="Enter verification details..."
+            placeholderTextColor={colors.textSecondary}
+            value={proofText}
+            onChangeText={setProofText}
+            multiline
+            numberOfLines={6}
+            textAlignVertical="top"
+          />
+        </View>
+
+        <View style={styles.infoBox}>
+          <IconSymbol
+            ios_icon_name="info.circle"
+            android_material_icon_name="info"
+            size={24}
+            color={colors.primary}
+          />
+          <Text style={styles.infoText}>
+            Your application will be reviewed by our team. This usually takes 24-48
+            hours. You&apos;ll be notified once approved.
           </Text>
         </View>
 
@@ -82,11 +141,9 @@ export default function VerificationScreen() {
           onPress={handleSubmit}
           disabled={loading}
         >
-          {loading ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={buttonStyles.primaryText}>Submit for Review</Text>
-          )}
+          <Text style={commonStyles.buttonText}>
+            {loading ? 'Submitting...' : 'Submit for Review'}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -96,59 +153,72 @@ export default function VerificationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 24,
+    paddingHorizontal: 20,
+    paddingTop: 40,
+    paddingBottom: 20,
   },
   header: {
-    alignItems: 'center',
-    marginTop: 40,
-    marginBottom: 40,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textLight,
-    textAlign: 'center',
-    paddingHorizontal: 20,
-  },
-  infoCard: {
-    backgroundColor: '#F8F8F8',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-  },
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  infoText: {
-    fontSize: 16,
-    color: colors.text,
-    marginLeft: 12,
-    flex: 1,
-  },
-  noteCard: {
-    flexDirection: 'row',
-    backgroundColor: '#FFF9E6',
-    borderRadius: 12,
-    padding: 16,
     marginBottom: 32,
   },
-  noteText: {
+  section: {
+    marginBottom: 32,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 16,
+  },
+  statusGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  statusCard: {
+    width: '48%',
+    backgroundColor: colors.card,
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    gap: 8,
+  },
+  statusCardSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.highlight,
+  },
+  statusLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.text,
+    textAlign: 'center',
+  },
+  statusLabelSelected: {
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  proofInput: {
+    height: 120,
+    paddingTop: 14,
+    marginTop: 12,
+  },
+  infoBox: {
+    flexDirection: 'row',
+    backgroundColor: colors.highlight,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    gap: 12,
+  },
+  infoText: {
+    flex: 1,
     fontSize: 14,
     color: colors.text,
-    marginLeft: 12,
-    flex: 1,
     lineHeight: 20,
   },
   buttonDisabled: {
