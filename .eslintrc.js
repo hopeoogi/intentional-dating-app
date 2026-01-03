@@ -21,11 +21,15 @@ module.exports = {
   ignorePatterns: ['/dist/*', '/public/*', '/babel-plugins/*', '/backend/*'],
   env: {
     browser: true,
+    node: true,
   },
   settings: {
-    'import/ignore': [
-      '@bacons/apple-targets',
-    ],
+    'import/resolver': {
+      node: {
+        extensions: ['.js', '.jsx', '.ts', '.tsx']
+      }
+    },
+    'import/ignore': ['react-native']
   },
   rules: {
     "@typescript-eslint/no-unused-vars": "off",
@@ -37,9 +41,16 @@ module.exports = {
     "@typescript-eslint/no-wrapper-object-types": "off",
     "@typescript-eslint/ban-tslint-comment": "off",
     "react/no-unescaped-entities": "off",
-    "import/no-unresolved": ["error", {
-      "ignore": ["@bacons/apple-targets"]
+    "import/no-unresolved": ["error", { 
+      ignore: [
+        'react-native',
+        'expo-glass-effect',
+        'expo-haptics',
+        'expo-router/unstable-native-tabs',
+        '@bacons/apple-targets'
+      ]
     }],
+    "import/namespace": "off",
     "prefer-const": "off",
     "react/prop-types": 1,
     "no-case-declarations": "off",
@@ -51,9 +62,13 @@ module.exports = {
   },
   overrides: [
     {
-      files: ['metro.config.js'],
+      files: ['metro.config.js', '*.config.js'],
+      env: {
+        node: true
+      },
       rules: {
-        '@typescript-eslint/no-var-requires': 'off'
+        '@typescript-eslint/no-var-requires': 'off',
+        'no-undef': 'off'
       }
     }
   ]
