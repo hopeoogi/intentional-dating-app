@@ -1,5 +1,4 @@
 
-import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,162 +9,189 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
+import React, { useState, useCallback } from 'react';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { authenticatedPut } from '@/utils/api';
+import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Picker } from '@react-native-picker/picker';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const [name, setName] = useState('');
-  const [dateOfBirth, setDateOfBirth] = useState(new Date());
+  const [formData, setFormData] = useState({
+    name: '',
+    dateOfBirth: new Date(2000, 0, 1),
+    sex: '',
+    location: '',
+    bio: '',
+  });
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [gender, setGender] = useState('');
-  const [location, setLocation] = useState('');
-  const [bio, setBio] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleContinue = async () => {
-    if (!name || !gender || !location) {
-      Alert.alert('Error', 'Please fill in all required fields');
+  const handleContinue = useCallback(async () => {
+    console.log('[Profile] Starting profile save process');
+    
+    // Validation
+    if (!formData.name || !formData.sex || !formData.location) {
+      Alert.alert('Error', 'Please fill in all required fields (Name, Sex, Location)');
       return;
     }
 
-    const age = new Date().getFullYear() - dateOfBirth.getFullYear();
+    // Age validation (must be 18+)
+    const today = new Date();
+    const birthDate = new Date(formData.dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+
     if (age < 18) {
-      Alert.alert('Error', 'You must be at least 18 years old');
+      Alert.alert('Age Requirement', 'You must be at least 18 years old to join Intentional');
       return;
     }
 
     try {
       setLoading(true);
+      console.log('[Profile] Saving profile data:', {
+        name: formData.name,
+        dateOfBirth: formData.dateOfBirth.toISOString(),
+        sex: formData.sex,
+        location: formData.location,
+        bio: formData.bio,
+      });
       
-      const profileData = {
-        name,
-        dateOfBirth: dateOfBirth.toISOString(),
-        gender,
-        location,
-        bio: bio || undefined,
-      };
+      // TODO: Backend Integration - Save profile data to the backend API
+      await authenticatedPut('/api/profile', {
+        name: formData.name,
+        dateOfBirth: formData.dateOfBirth.toISOString(),
+        sex: formData.sex,
+        location: formData.location,
+        bio: formData.bio,
+      });
 
-      console.log('[Profile] Saving profile data:', profileData);
-
-      const response = await authenticatedPut('/api/profile', profileData);
-      console.log('[Profile] Profile saved successfully:', response);
-
+      console.log('[Profile] Profile saved successfully, navigating to media upload');
+      
+      // Navigate to media upload
       router.push('/onboarding/media');
-    } catch (error) {
+    } catch (error: any) {
       console.error('[Profile] Profile save error:', error);
-      Alert.alert('Error', 'Failed to save profile. Please try again.');
+      Alert.alert(
+        'Save Failed', 
+        error.message || 'Failed to save profile. Please check your connection and try again.'
+      );
     } finally {
       setLoading(false);
     }
-  };
+  }, [formData, router]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
+        style={styles.keyboardView}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Header */}
           <View style={styles.header}>
-            <Text style={commonStyles.title}>Create Your Profile</Text>
-            <Text style={commonStyles.subtitle}>
-              Tell us a bit about yourself
-            </Text>
+            <Image
+              source={require('@/assets/images/96e0c1f0-fcef-4b76-b942-74280a3296cb.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <Text style={styles.title}>Tell Us About You</Text>
+            <Text style={styles.subtitle}>Step 1 of 4</Text>
           </View>
 
+          {/* Form */}
           <View style={styles.form}>
-            <Text style={styles.label}>Name *</Text>
+            <Text style={styles.label}>Full Name *</Text>
             <TextInput
-              style={commonStyles.input}
-              placeholder="Your name"
-              placeholderTextColor={colors.textSecondary}
-              value={name}
-              onChangeText={setName}
-              autoCapitalize="words"
+              style={styles.input}
+              placeholder="Enter your name"
+              placeholderTextColor="#999"
+              value={formData.name}
+              onChangeText={(text) => setFormData({ ...formData, name: text })}
             />
 
             <Text style={styles.label}>Date of Birth *</Text>
             <TouchableOpacity
-              style={[commonStyles.input, styles.dateButton]}
+              style={styles.input}
               onPress={() => setShowDatePicker(true)}
             >
               <Text style={styles.dateText}>
-                {dateOfBirth.toLocaleDateString()}
+                {formData.dateOfBirth.toLocaleDateString()}
               </Text>
             </TouchableOpacity>
+
             {showDatePicker && (
               <DateTimePicker
-                value={dateOfBirth}
+                value={formData.dateOfBirth}
                 mode="date"
                 display="spinner"
                 onChange={(event, selectedDate) => {
                   setShowDatePicker(Platform.OS === 'ios');
                   if (selectedDate) {
-                    setDateOfBirth(selectedDate);
+                    setFormData({ ...formData, dateOfBirth: selectedDate });
                   }
                 }}
                 maximumDate={new Date()}
               />
             )}
 
-            <Text style={styles.label}>Gender *</Text>
-            <View style={styles.genderContainer}>
-              {['Man', 'Woman', 'Non-binary', 'Other'].map((option) => (
-                <TouchableOpacity
-                  key={option}
-                  style={[
-                    styles.genderButton,
-                    gender === option && styles.genderButtonSelected,
-                  ]}
-                  onPress={() => setGender(option)}
-                >
-                  <Text
-                    style={[
-                      styles.genderButtonText,
-                      gender === option && styles.genderButtonTextSelected,
-                    ]}
-                  >
-                    {option}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            <Text style={styles.label}>Sex *</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={formData.sex}
+                onValueChange={(value) => setFormData({ ...formData, sex: value })}
+                style={styles.picker}
+              >
+                <Picker.Item label="Select..." value="" />
+                <Picker.Item label="Male" value="male" />
+                <Picker.Item label="Female" value="female" />
+                <Picker.Item label="Non-binary" value="non-binary" />
+                <Picker.Item label="Other" value="other" />
+              </Picker>
             </View>
 
             <Text style={styles.label}>Location *</Text>
             <TextInput
-              style={commonStyles.input}
+              style={styles.input}
               placeholder="City, State"
-              placeholderTextColor={colors.textSecondary}
-              value={location}
-              onChangeText={setLocation}
-              autoCapitalize="words"
+              placeholderTextColor="#999"
+              value={formData.location}
+              onChangeText={(text) => setFormData({ ...formData, location: text })}
             />
 
             <Text style={styles.label}>Bio (Optional)</Text>
             <TextInput
-              style={[commonStyles.input, styles.bioInput]}
-              placeholder="Tell us about yourself..."
-              placeholderTextColor={colors.textSecondary}
-              value={bio}
-              onChangeText={setBio}
+              style={[styles.input, styles.textArea]}
+              placeholder="Tell us a bit about yourself..."
+              placeholderTextColor="#999"
+              value={formData.bio}
+              onChangeText={(text) => setFormData({ ...formData, bio: text })}
               multiline
               numberOfLines={4}
               textAlignVertical="top"
             />
 
             <TouchableOpacity
-              style={[buttonStyles.primary, loading && styles.buttonDisabled]}
+              style={[styles.continueButton, loading && styles.buttonDisabled]}
               onPress={handleContinue}
               disabled={loading}
             >
-              <Text style={commonStyles.buttonText}>
-                {loading ? 'Saving...' : 'Continue'}
-              </Text>
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.continueButtonText}>Continue</Text>
+              )}
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -177,64 +203,89 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#FFFFFF',
+  },
+  keyboardView: {
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 40,
-    paddingBottom: 20,
+    padding: 24,
   },
   header: {
+    alignItems: 'center',
     marginBottom: 32,
   },
+  logo: {
+    width: 60,
+    height: 60,
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2C3E50',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#7F8C8D',
+  },
   form: {
-    marginBottom: 24,
+    flex: 1,
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
+    color: '#2C3E50',
     marginBottom: 8,
+    marginTop: 16,
   },
-  dateButton: {
-    justifyContent: 'center',
+  input: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: '#2C3E50',
+    borderWidth: 1,
+    borderColor: '#E1E8ED',
   },
   dateText: {
     fontSize: 16,
-    color: colors.text,
+    color: '#2C3E50',
   },
-  genderContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 16,
-    gap: 8,
-  },
-  genderButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    backgroundColor: colors.card,
+  pickerContainer: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: '#E1E8ED',
+    overflow: 'hidden',
   },
-  genderButtonSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+  picker: {
+    height: 50,
   },
-  genderButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.text,
-  },
-  genderButtonTextSelected: {
-    color: '#FFFFFF',
-  },
-  bioInput: {
+  textArea: {
     height: 100,
-    paddingTop: 14,
+    paddingTop: 16,
+  },
+  continueButton: {
+    backgroundColor: '#5B4FE9',
+    borderRadius: 12,
+    padding: 18,
+    alignItems: 'center',
+    marginTop: 32,
+    shadowColor: '#5B4FE9',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  continueButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

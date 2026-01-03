@@ -1,80 +1,61 @@
+
 {
   "expo": {
-    "name": "Intentional Dating",
+    "name": "Intentional",
     "slug": "intentional-dating",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/images/natively-dark.png",
+    "icon": "./assets/images/96e0c1f0-fcef-4b76-b942-74280a3296cb.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/natively-dark.png",
+      "image": "./assets/images/96e0c1f0-fcef-4b76-b942-74280a3296cb.png",
       "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "backgroundColor": "#5B4FE9"
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.intentionaldating.app",
-      "buildNumber": "1",
+      "bundleIdentifier": "com.intentional.dating",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSCameraUsageDescription": "We need access to your camera to take profile photos and videos.",
-        "NSPhotoLibraryUsageDescription": "We need access to your photo library to upload profile photos and videos.",
-        "NSMicrophoneUsageDescription": "We need access to your microphone to record profile videos."
+        "NSPhotoLibraryUsageDescription": "We need access to your photo library to upload profile photos",
+        "NSCameraUsageDescription": "We need access to your camera to take profile photos"
       },
-      "config": {
-        "usesNonExemptEncryption": false
-      }
+      "buildNumber": "1.0.1"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/natively-dark.png",
-        "backgroundColor": "#000000"
+        "foregroundImage": "./assets/images/96e0c1f0-fcef-4b76-b942-74280a3296cb.png",
+        "backgroundColor": "#5B4FE9"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.intentionaldating.app",
-      "versionCode": 1,
+      "package": "com.intentional.dating",
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "RECORD_AUDIO"
+        "WRITE_EXTERNAL_STORAGE"
       ]
     },
     "web": {
-      "favicon": "./assets/images/final_quest_240x240.png",
+      "favicon": "./assets/images/96e0c1f0-fcef-4b76-b942-74280a3296cb.png",
       "bundler": "metro"
     },
     "plugins": [
       "expo-font",
       "expo-router",
       "expo-web-browser",
-      "expo-secure-store",
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Allow Intentional Dating to access your photos to upload profile pictures.",
-          "cameraPermission": "Allow Intentional Dating to access your camera to take profile photos."
-        }
-      ]
+      "expo-image-picker",
+      "expo-secure-store"
     ],
-    "scheme": "intentionaldating",
+    "scheme": "intentional",
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
       "router": {},
-      "backendUrl": "https://6ytjugugmhrw5w5dguny2u79uz83r3tz.app.specular.dev",
       "eas": {
-        "projectId": "YOUR_PROJECT_ID_HERE"
+        "projectId": "your-project-id"
       }
-    },
-    "owner": "YOUR_EXPO_USERNAME",
-    "updates": {
-      "url": "https://u.expo.dev/YOUR_PROJECT_ID_HERE"
-    },
-    "runtimeVersion": {
-      "policy": "appVersion"
     }
   }
 }

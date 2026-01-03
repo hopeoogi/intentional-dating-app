@@ -16,6 +16,7 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { AuthProvider } from "@/contexts/AuthContext";
 
+// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export const unstable_settings = {
@@ -34,12 +35,6 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
-  // Log backend URL on startup
-  useEffect(() => {
-    const backendUrl = require('expo-constants').default.expoConfig?.extra?.backendUrl;
-    console.log('[App] Backend URL configured:', backendUrl);
-  }, []);
-
   if (!loaded) {
     return null;
   }
@@ -48,24 +43,24 @@ export default function RootLayout() {
     ...DefaultTheme,
     dark: false,
     colors: {
-      primary: "#E91E63",
+      primary: "#5B4FE9",
       background: "#FFFFFF",
-      card: "#F8F9FA",
-      text: "#1A1A1A",
-      border: "#E5E7EB",
-      notification: "#E91E63",
+      card: "#FFFFFF",
+      text: "#2C3E50",
+      border: "#E1E8ED",
+      notification: "#FF6B6B",
     },
   };
 
   const CustomDarkTheme: Theme = {
     ...DarkTheme,
     colors: {
-      primary: "#FF6B9D",
+      primary: "#7C6FFF",
       background: "#1A1A1A",
-      card: "#2A2A2A",
+      card: "#2C2C2C",
       text: "#FFFFFF",
       border: "#3A3A3A",
-      notification: "#FF6B9D",
+      notification: "#FF6B6B",
     },
   };
 
@@ -77,34 +72,18 @@ export default function RootLayout() {
       >
         <AuthProvider>
           <GestureHandlerRootView style={{ flex: 1 }}>
-            <Stack>
-              <Stack.Screen name="index" options={{ headerShown: false }} />
-              <Stack.Screen name="onboarding/auth" options={{ headerShown: false }} />
-              <Stack.Screen name="onboarding/signup" options={{ headerShown: false }} />
-              <Stack.Screen name="onboarding/profile" options={{ headerShown: false }} />
-              <Stack.Screen name="onboarding/media" options={{ headerShown: false }} />
-              <Stack.Screen name="onboarding/verification" options={{ headerShown: false }} />
-              <Stack.Screen name="onboarding/pending" options={{ headerShown: false }} />
-              <Stack.Screen name="onboarding/subscription" options={{ headerShown: false }} />
-              <Stack.Screen name="auth-popup" options={{ headerShown: false }} />
-              <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen 
-                name="conversation/[id]" 
-                options={{ 
-                  headerShown: true,
-                  title: "Conversation",
-                  headerBackTitle: "Back"
-                }} 
-              />
-              <Stack.Screen 
-                name="profile/[id]" 
-                options={{ 
-                  headerShown: true,
-                  title: "Profile",
-                  headerBackTitle: "Back"
-                }} 
-              />
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="signin" />
+              <Stack.Screen name="onboarding/signup" />
+              <Stack.Screen name="onboarding/profile" />
+              <Stack.Screen name="onboarding/media" />
+              <Stack.Screen name="onboarding/verification" />
+              <Stack.Screen name="onboarding/pending" />
+              <Stack.Screen name="onboarding/subscription" />
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="conversation/[id]" />
+              <Stack.Screen name="profile/[id]" />
             </Stack>
             <SystemBars style="auto" />
           </GestureHandlerRootView>

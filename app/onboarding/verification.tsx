@@ -1,5 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import { IconSymbol } from '@/components/IconSymbol';
+import { authenticatedPost } from '@/utils/api';
 import {
   View,
   Text,
@@ -8,143 +10,118 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
-import { IconSymbol } from '@/components/IconSymbol';
-import { authenticatedPost } from '@/utils/api';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function VerificationScreen() {
   const router = useRouter();
-  const [selectedStatus, setSelectedStatus] = useState('');
-  const [proofText, setProofText] = useState('');
+  const [formData, setFormData] = useState({
+    status: '',
+    proof: '',
+  });
   const [loading, setLoading] = useState(false);
 
-  const statuses = [
-    { id: 'verified', label: 'Verified Professional', icon: 'verified' },
-    { id: 'student', label: 'Student', icon: 'school' },
-    { id: 'entrepreneur', label: 'Entrepreneur', icon: 'business' },
-    { id: 'creative', label: 'Creative', icon: 'palette' },
-    { id: 'other', label: 'Other', icon: 'person' },
-  ];
-
-  const handleSubmit = async () => {
-    if (!selectedStatus) {
-      Alert.alert('Error', 'Please select a status');
-      return;
-    }
-
-    if (!proofText.trim()) {
-      Alert.alert('Error', 'Please provide verification details');
+  const handleSubmit = useCallback(async () => {
+    if (!formData.status || !formData.proof) {
+      Alert.alert('Missing Information', 'Please fill in all fields to continue');
       return;
     }
 
     try {
       setLoading(true);
+      console.log('[Verification] Submitting verification data');
       
-      const verificationData = {
-        status: selectedStatus,
-        proofText: proofText.trim(),
-      };
+      // TODO: Backend Integration - Submit verification data to the backend API
+      await authenticatedPost('/api/verification/submit', {
+        status: formData.status,
+        proof: formData.proof,
+      });
 
-      console.log('[Verification] Submitting verification:', verificationData);
-
-      const response = await authenticatedPost('/api/verification/submit', verificationData);
-      console.log('[Verification] Verification submitted successfully:', response);
-
-      router.push('/onboarding/pending');
-    } catch (error) {
+      console.log('[Verification] Verification submitted successfully');
+      
+      // Navigate to pending approval screen
+      router.replace('/onboarding/pending');
+    } catch (error: any) {
       console.error('[Verification] Verification submit error:', error);
-      Alert.alert('Error', 'Failed to submit verification. Please try again.');
+      Alert.alert('Submission Failed', error.message || 'Failed to submit verification. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [formData, router]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Header */}
         <View style={styles.header}>
-          <Text style={commonStyles.title}>Verification</Text>
-          <Text style={commonStyles.subtitle}>
-            Help us verify your identity and build a trusted community
-          </Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Select Your Status</Text>
-          <View style={styles.statusGrid}>
-            {statuses.map((status) => (
-              <TouchableOpacity
-                key={status.id}
-                style={[
-                  styles.statusCard,
-                  selectedStatus === status.id && styles.statusCardSelected,
-                ]}
-                onPress={() => setSelectedStatus(status.id)}
-              >
-                <IconSymbol
-                  ios_icon_name={status.icon}
-                  android_material_icon_name={status.icon as any}
-                  size={32}
-                  color={
-                    selectedStatus === status.id ? colors.primary : colors.textSecondary
-                  }
-                />
-                <Text
-                  style={[
-                    styles.statusLabel,
-                    selectedStatus === status.id && styles.statusLabelSelected,
-                  ]}
-                >
-                  {status.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Verification Details</Text>
-          <Text style={commonStyles.textSecondary}>
-            Provide information to help us verify your status (e.g., LinkedIn profile,
-            company name, university, portfolio link)
-          </Text>
-          <TextInput
-            style={[commonStyles.input, styles.proofInput]}
-            placeholder="Enter verification details..."
-            placeholderTextColor={colors.textSecondary}
-            value={proofText}
-            onChangeText={setProofText}
-            multiline
-            numberOfLines={6}
-            textAlignVertical="top"
+          <Image
+            source={require('@/assets/images/96e0c1f0-fcef-4b76-b942-74280a3296cb.png')}
+            style={styles.logo}
+            resizeMode="contain"
           />
+          <Text style={styles.title}>Verification</Text>
+          <Text style={styles.subtitle}>Step 3 of 4</Text>
         </View>
 
         <View style={styles.infoBox}>
-          <IconSymbol
-            ios_icon_name="info.circle"
-            android_material_icon_name="info"
-            size={24}
-            color={colors.primary}
-          />
+          <IconSymbol ios_icon_name="checkmark.shield.fill" android_material_icon_name="verified-user" size={24} color="#5B4FE9" />
           <Text style={styles.infoText}>
-            Your application will be reviewed by our team. This usually takes 24-48
-            hours. You&apos;ll be notified once approved.
+            Verification helps us maintain a trusted community. This information will be reviewed by our team.
           </Text>
         </View>
 
-        <TouchableOpacity
-          style={[buttonStyles.primary, loading && styles.buttonDisabled]}
-          onPress={handleSubmit}
-          disabled={loading}
-        >
-          <Text style={commonStyles.buttonText}>
-            {loading ? 'Submitting...' : 'Submit for Review'}
+        {/* Form */}
+        <View style={styles.form}>
+          <Text style={styles.label}>Status/Profession *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g., Software Engineer, Doctor, Student"
+            placeholderTextColor="#999"
+            value={formData.status}
+            onChangeText={(text) => setFormData({ ...formData, status: text })}
+          />
+
+          <Text style={styles.label}>Verification Proof *</Text>
+          <Text style={styles.helperText}>
+            Provide LinkedIn profile, company email, or other professional verification
           </Text>
-        </TouchableOpacity>
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            placeholder="LinkedIn URL, company email, or other proof"
+            placeholderTextColor="#999"
+            value={formData.proof}
+            onChangeText={(text) => setFormData({ ...formData, proof: text })}
+            multiline
+            numberOfLines={4}
+            textAlignVertical="top"
+          />
+
+          <View style={styles.privacyNote}>
+            <IconSymbol ios_icon_name="lock.fill" android_material_icon_name="lock" size={20} color="#7F8C8D" />
+            <Text style={styles.privacyText}>
+              Your verification information is kept private and only used for approval purposes
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.submitButton, loading && styles.buttonDisabled]}
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.submitButtonText}>Submit for Review</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -153,75 +130,107 @@ export default function VerificationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 40,
-    paddingBottom: 20,
+    padding: 24,
   },
   header: {
-    marginBottom: 32,
+    alignItems: 'center',
+    marginBottom: 24,
   },
-  section: {
-    marginBottom: 32,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
+  logo: {
+    width: 60,
+    height: 60,
     marginBottom: 16,
   },
-  statusGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2C3E50',
+    marginBottom: 8,
   },
-  statusCard: {
-    width: '48%',
-    backgroundColor: colors.card,
-    borderWidth: 2,
-    borderColor: colors.border,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    gap: 8,
-  },
-  statusCardSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.highlight,
-  },
-  statusLabel: {
+  subtitle: {
     fontSize: 14,
-    fontWeight: '500',
-    color: colors.text,
-    textAlign: 'center',
-  },
-  statusLabelSelected: {
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  proofInput: {
-    height: 120,
-    paddingTop: 14,
-    marginTop: 12,
+    color: '#7F8C8D',
   },
   infoBox: {
     flexDirection: 'row',
-    backgroundColor: colors.highlight,
+    backgroundColor: '#F0EDFF',
     borderRadius: 12,
     padding: 16,
     marginBottom: 24,
-    gap: 12,
+    alignItems: 'center',
   },
   infoText: {
     flex: 1,
+    marginLeft: 12,
     fontSize: 14,
-    color: colors.text,
+    color: '#5B4FE9',
     lineHeight: 20,
+  },
+  form: {
+    flex: 1,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2C3E50',
+    marginBottom: 8,
+    marginTop: 16,
+  },
+  helperText: {
+    fontSize: 12,
+    color: '#7F8C8D',
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: '#2C3E50',
+    borderWidth: 1,
+    borderColor: '#E1E8ED',
+  },
+  textArea: {
+    height: 100,
+    paddingTop: 16,
+  },
+  privacyNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 24,
+  },
+  privacyText: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 12,
+    color: '#7F8C8D',
+    lineHeight: 18,
+  },
+  submitButton: {
+    backgroundColor: '#5B4FE9',
+    borderRadius: 12,
+    padding: 18,
+    alignItems: 'center',
+    marginTop: 32,
+    shadowColor: '#5B4FE9',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  submitButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

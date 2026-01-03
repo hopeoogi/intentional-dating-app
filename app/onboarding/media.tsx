@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Image,
   Alert,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -27,7 +28,7 @@ export default function MediaScreen() {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const pickImage = async () => {
+  const pickImage = useCallback(async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission Required', 'Please allow access to your photo library');
@@ -51,9 +52,9 @@ export default function MediaScreen() {
         },
       ]);
     }
-  };
+  }, [media]);
 
-  const takePhoto = async () => {
+  const takePhoto = useCallback(async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission Required', 'Please allow access to your camera');
@@ -75,15 +76,15 @@ export default function MediaScreen() {
         },
       ]);
     }
-  };
+  }, [media]);
 
-  const removeMedia = (index: number) => {
+  const removeMedia = useCallback((index: number) => {
     setMedia(media.filter((_, i) => i !== index));
-  };
+  }, [media]);
 
-  const handleContinue = async () => {
+  const handleContinue = useCallback(async () => {
     if (media.length < 2) {
-      Alert.alert('Error', 'Please upload at least 2 photos or videos');
+      Alert.alert('More Photos Needed', 'Please upload at least 2 photos or videos to continue');
       return;
     }
 
@@ -91,7 +92,7 @@ export default function MediaScreen() {
       setLoading(true);
       console.log('[Media] Uploading media files:', media.length);
 
-      // Upload each media file
+      // TODO: Backend Integration - Upload each media file to the backend API
       for (const item of media) {
         const formData = new FormData();
         
@@ -130,20 +131,26 @@ export default function MediaScreen() {
       router.push('/onboarding/verification');
     } catch (error) {
       console.error('[Media] Media upload error:', error);
-      Alert.alert('Error', 'Failed to upload media. Please try again.');
+      Alert.alert('Upload Failed', 'Failed to upload media. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [media, router]);
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
+          <Image
+            source={require('@/assets/images/96e0c1f0-fcef-4b76-b942-74280a3296cb.png')}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
           <Text style={commonStyles.title}>Add Photos & Videos</Text>
           <Text style={commonStyles.subtitle}>
             Upload at least 2 photos or videos. Quality matters!
           </Text>
+          <Text style={styles.stepText}>Step 2 of 4</Text>
         </View>
 
         <View style={styles.mediaGrid}>
@@ -225,9 +232,13 @@ export default function MediaScreen() {
           onPress={handleContinue}
           disabled={loading || media.length < 2}
         >
-          <Text style={commonStyles.buttonText}>
-            {loading ? 'Uploading...' : `Continue (${media.length}/6)`}
-          </Text>
+          {loading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={commonStyles.buttonText}>
+              Continue ({media.length}/6)
+            </Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -242,11 +253,22 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingTop: 20,
     paddingBottom: 20,
   },
   header: {
     marginBottom: 32,
+    alignItems: 'center',
+  },
+  headerLogo: {
+    width: 50,
+    height: 50,
+    marginBottom: 16,
+  },
+  stepText: {
+    fontSize: 14,
+    color: '#7F8C8D',
+    marginTop: 8,
   },
   mediaGrid: {
     flexDirection: 'row',
