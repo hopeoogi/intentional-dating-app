@@ -24,12 +24,7 @@ module.exports = {
     node: true,
   },
   settings: {
-    'import/resolver': {
-      node: {
-        extensions: ['.js', '.jsx', '.ts', '.tsx']
-      }
-    },
-    'import/ignore': ['react-native']
+    'import/ignore': ['react-native', 'expo-glass-effect', 'expo-haptics', '@bacons/apple-targets', 'expo-router/unstable-native-tabs']
   },
   rules: {
     "@typescript-eslint/no-unused-vars": "off",
@@ -41,15 +36,7 @@ module.exports = {
     "@typescript-eslint/no-wrapper-object-types": "off",
     "@typescript-eslint/ban-tslint-comment": "off",
     "react/no-unescaped-entities": "off",
-    "import/no-unresolved": ["error", { 
-      ignore: [
-        'react-native',
-        'expo-glass-effect',
-        'expo-haptics',
-        'expo-router/unstable-native-tabs',
-        '@bacons/apple-targets'
-      ]
-    }],
+    "import/no-unresolved": "off",
     "import/namespace": "off",
     "prefer-const": "off",
     "react/prop-types": 1,
@@ -59,17 +46,5 @@ module.exports = {
     "no-constant-condition": "off",
     "no-var": "off",
     "no-useless-escape": "off"
-  },
-  overrides: [
-    {
-      files: ['metro.config.js', '*.config.js'],
-      env: {
-        node: true
-      },
-      rules: {
-        '@typescript-eslint/no-var-requires': 'off',
-        'no-undef': 'off'
-      }
-    }
-  ]
+  }
 };

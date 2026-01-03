@@ -16,22 +16,32 @@ export const colors = {
   warning: '#F59E0B',
 };
 
-export const buttonStyles = StyleSheet.create({
+export const buttonStyles = {
   primary: {
     backgroundColor: colors.primary,
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  primaryText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#FFFFFF',
   },
   secondary: {
     backgroundColor: colors.secondary,
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  secondaryText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#FFFFFF',
   },
   outline: {
     backgroundColor: 'transparent',
@@ -40,15 +50,20 @@ export const buttonStyles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 2,
     borderColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  outlineText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: colors.primary,
   },
   text: {
     backgroundColor: 'transparent',
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
-});
+};
 
 export const commonStyles = StyleSheet.create({
   container: {
