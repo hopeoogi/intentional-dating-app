@@ -10,12 +10,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { colors, commonStyles } from '@/styles/commonStyles';
-import { IconSymbol } from '@/components/IconSymbol';
+import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { authenticatedGet, authenticatedPost } from '@/utils/api';
+import { IconSymbol } from '@/components/IconSymbol';
+import { colors, commonStyles } from '@/styles/commonStyles';
 
 interface Message {
   id: string;
@@ -27,93 +28,101 @@ interface Message {
 
 export default function ConversationScreen() {
   const { id } = useLocalSearchParams();
-  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputText, setInputText] = useState('');
-  const [isFirstMessage, setIsFirstMessage] = useState(true);
-  const [loading, setLoading] = useState(false);
+  const [newMessage, setNewMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+  const router = useRouter();
 
-  const loadMessages = useCallback(async () => {
-    try {
-      console.log('[Conversation] Fetching messages for conversation:', id);
-
-      const response = await authenticatedGet(`/api/messages/${id}`);
-      console.log('[Conversation] Messages fetched:', response);
-
-      // Transform API response to match our interface
-      const transformedMessages: Message[] = (response.messages || []).map((msg: any) => ({
-        id: msg.id,
-        text: msg.content,
-        senderId: msg.senderId,
-        timestamp: new Date(msg.createdAt),
-        isOpener: msg.isOpener || false,
-      }));
-
-      setMessages(transformedMessages);
-      setIsFirstMessage(transformedMessages.length === 0);
-
-      // Mark messages as read
-      await authenticatedPost(`/api/messages/${id}/mark-read`, {});
-    } catch (error) {
-      console.error('[Conversation] Failed to load messages:', error);
+  useEffect(() => {
+    if (id) {
+      loadMessages();
     }
   }, [id]);
 
-  useEffect(() => {
-    loadMessages();
-  }, [loadMessages]);
-
-  const handleSend = useCallback(async () => {
-    if (!inputText.trim()) {
-      return;
+  const loadMessages = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await authenticatedGet(`/api/messages/${id}`);
+      console.log('[Conversation] Loaded messages:', data);
+      
+      // Transform the API response to match our interface
+      const formattedMessages = (data.messages || []).map((msg: any) => ({
+        id: msg.id || msg._id || Date.now().toString(),
+        text: msg.text || msg.content || '',
+        senderId: msg.senderId || msg.sender || 'unknown',
+        timestamp: new Date(msg.timestamp || msg.createdAt || Date.now()),
+        isOpener: msg.isOpener || false,
+      }));
+      
+      setMessages(formattedMessages);
+      
+      // Mark messages as read
+      try {
+        await authenticatedPost(`/api/messages/${id}/mark-read`, {});
+      } catch (markReadError) {
+        console.error('[Conversation] Failed to mark messages as read:', markReadError);
+      }
+    } catch (error: any) {
+      console.error('[Conversation] Failed to load messages:', error);
+      Alert.alert('Error', error.message || 'Failed to load messages');
+    } finally {
+      setLoading(false);
     }
+  }, [id]);
 
-    if (isFirstMessage && inputText.length < 36) {
+  const handleSend = async () => {
+    const trimmedMessage = newMessage.trim();
+
+    // Check if this is the first message (opener)
+    if (messages.length === 0 && trimmedMessage.length < 36) {
       Alert.alert(
         'Opener Too Short',
-        'Your first message must be at least 36 characters to show genuine interest and start a meaningful conversation.'
+        'Your first message must be at least 36 characters to show genuine interest. This helps create meaningful conversations.'
       );
       return;
     }
 
+    if (trimmedMessage.length === 0) {
+      return;
+    }
+
     try {
-      setLoading(true);
+      setSending(true);
+      console.log('[Conversation] Sending message:', { conversationId: id, text: trimmedMessage });
       
-      const messageData = {
+      const response = await authenticatedPost('/api/messages', {
         conversationId: id,
-        content: inputText.trim(),
-      };
-
-      console.log('[Conversation] Sending message:', messageData);
-
-      const response = await authenticatedPost('/api/messages', messageData);
+        text: trimmedMessage,
+      });
+      
       console.log('[Conversation] Message sent:', response);
 
-      const newMessage: Message = {
-        id: response.id || Date.now().toString(),
-        text: inputText,
+      const newMsg: Message = {
+        id: response.id || response._id || Date.now().toString(),
+        text: trimmedMessage,
         senderId: 'me',
-        timestamp: new Date(),
-        isOpener: isFirstMessage,
+        timestamp: new Date(response.timestamp || response.createdAt || Date.now()),
+        isOpener: messages.length === 0,
       };
 
-      setMessages([...messages, newMessage]);
-      setInputText('');
-      setIsFirstMessage(false);
+      setMessages([...messages, newMsg]);
+      setNewMessage('');
 
+      // Scroll to bottom
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
-    } catch (error) {
+    } catch (error: any) {
       console.error('[Conversation] Failed to send message:', error);
-      Alert.alert('Error', 'Failed to send message');
+      Alert.alert('Error', error.message || 'Failed to send message');
     } finally {
-      setLoading(false);
+      setSending(false);
     }
-  }, [inputText, isFirstMessage, id, messages]);
+  };
 
-  const handleEndConversation = useCallback(() => {
+  const handleEndConversation = () => {
     Alert.alert(
       'End Conversation',
       'Are you sure you want to end this conversation? You won&apos;t see this person again.',
@@ -127,308 +136,272 @@ export default function ConversationScreen() {
               console.log('[Conversation] Ending conversation:', id);
               await authenticatedPost(`/api/conversations/${id}/end`, {});
               console.log('[Conversation] Conversation ended successfully');
-              router.back();
-            } catch (error) {
+              Alert.alert('Success', 'Conversation ended', [
+                { text: 'OK', onPress: () => router.back() }
+              ]);
+            } catch (error: any) {
               console.error('[Conversation] Failed to end conversation:', error);
-              Alert.alert('Error', 'Failed to end conversation');
+              Alert.alert('Error', error.message || 'Failed to end conversation');
             }
           },
         },
       ]
     );
-  }, [id, router]);
+  };
 
-  const handleSnooze = useCallback(() => {
+  const handleSnooze = () => {
     Alert.alert(
       'Snooze Conversation',
       'How long would you like to snooze this conversation?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: '12 hours',
+          text: '12 Hours',
           onPress: async () => {
             try {
               console.log('[Conversation] Snoozing conversation for 12 hours:', id);
-              await authenticatedPost(`/api/conversations/${id}/snooze`, { duration: 12 });
-              Alert.alert('Snoozed', 'Conversation snoozed for 12 hours');
-              router.back();
-            } catch (error) {
+              await authenticatedPost(`/api/conversations/${id}/snooze`, {
+                duration: 12,
+              });
+              console.log('[Conversation] Conversation snoozed successfully');
+              Alert.alert('Success', 'Conversation snoozed for 12 hours', [
+                { text: 'OK', onPress: () => router.back() }
+              ]);
+            } catch (error: any) {
               console.error('[Conversation] Failed to snooze conversation:', error);
-              Alert.alert('Error', 'Failed to snooze conversation');
+              Alert.alert('Error', error.message || 'Failed to snooze conversation');
             }
           },
         },
         {
-          text: '24 hours',
+          text: '24 Hours',
           onPress: async () => {
             try {
               console.log('[Conversation] Snoozing conversation for 24 hours:', id);
-              await authenticatedPost(`/api/conversations/${id}/snooze`, { duration: 24 });
-              Alert.alert('Snoozed', 'Conversation snoozed for 24 hours');
-              router.back();
-            } catch (error) {
+              await authenticatedPost(`/api/conversations/${id}/snooze`, {
+                duration: 24,
+              });
+              console.log('[Conversation] Conversation snoozed successfully');
+              Alert.alert('Success', 'Conversation snoozed for 24 hours', [
+                { text: 'OK', onPress: () => router.back() }
+              ]);
+            } catch (error: any) {
               console.error('[Conversation] Failed to snooze conversation:', error);
-              Alert.alert('Error', 'Failed to snooze conversation');
+              Alert.alert('Error', error.message || 'Failed to snooze conversation');
             }
           },
         },
       ]
     );
-  }, [id, router]);
+  };
 
-  const renderMessage = useCallback(({ item }: { item: Message }) => {
+  const renderMessage = ({ item }: { item: Message }) => {
     const isMe = item.senderId === 'me';
     return (
       <View
         style={[
           styles.messageContainer,
-          isMe ? styles.messageContainerMe : styles.messageContainerOther,
+          isMe ? styles.myMessage : styles.theirMessage,
         ]}
       >
-        <View
-          style={[
-            styles.messageBubble,
-            isMe ? styles.messageBubbleMe : styles.messageBubbleOther,
-          ]}
-        >
-          {item.isOpener && (
-            <View style={styles.openerBadge}>
-              <Text style={styles.openerBadgeText}>Opener</Text>
-            </View>
-          )}
-          <Text
-            style={[
-              styles.messageText,
-              isMe ? styles.messageTextMe : styles.messageTextOther,
-            ]}
-          >
-            {item.text}
-          </Text>
-          <Text
-            style={[
-              styles.messageTime,
-              isMe ? styles.messageTimeMe : styles.messageTimeOther,
-            ]}
-          >
-            {item.timestamp.toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </Text>
-        </View>
+        <Text style={[styles.messageText, isMe && styles.myMessageText]}>
+          {item.text}
+        </Text>
+        <Text style={[styles.timestamp, isMe && styles.myTimestamp]}>
+          {item.timestamp.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
+        </Text>
       </View>
     );
-  }, []);
+  };
+
+  if (loading) {
+    return (
+      <View style={commonStyles.centered}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  const characterCount = newMessage.trim().length;
+  const isFirstMessage = messages.length === 0;
+  const showCharacterCount = isFirstMessage && characterCount < 36;
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-      >
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.messagesList}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-        />
+    <>
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: 'Conversation',
+          headerBackTitle: 'Back',
+          headerRight: () => (
+            <View style={styles.headerRight}>
+              <TouchableOpacity onPress={handleSnooze} style={styles.headerButton}>
+                <IconSymbol ios_icon_name="moon.fill" android_material_icon_name="notifications-off" size={22} color={colors.text} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleEndConversation} style={styles.headerButton}>
+                <IconSymbol ios_icon_name="xmark.circle.fill" android_material_icon_name="cancel" size={22} color={colors.error} />
+              </TouchableOpacity>
+            </View>
+          ),
+        }}
+      />
+      <SafeAreaView style={styles.container} edges={['bottom']}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        >
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.messagesList}
+            onContentSizeChange={() =>
+              flatListRef.current?.scrollToEnd({ animated: true })
+            }
+          />
 
-        {isFirstMessage && (
-          <View style={styles.openerHint}>
-            <IconSymbol
-              ios_icon_name="info.circle"
-              android_material_icon_name="info"
-              size={20}
-              color={colors.primary}
-            />
-            <Text style={styles.openerHintText}>
-              First message must be at least 36 characters to show genuine interest
-            </Text>
-          </View>
-        )}
-
-        <View style={styles.inputContainer}>
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={styles.input}
-              placeholder={
-                isFirstMessage
-                  ? 'Write a thoughtful opener (36+ chars)...'
-                  : 'Type a message...'
-              }
-              placeholderTextColor={colors.textSecondary}
-              value={inputText}
-              onChangeText={setInputText}
-              multiline
-              maxLength={500}
-            />
-            <TouchableOpacity
-              style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
-              onPress={handleSend}
-              disabled={!inputText.trim() || loading}
-            >
-              <IconSymbol
-                ios_icon_name="arrow.up.circle.fill"
-                android_material_icon_name="send"
-                size={32}
-                color={inputText.trim() ? colors.primary : colors.textSecondary}
+          <View style={styles.inputContainer}>
+            {showCharacterCount && (
+              <View style={styles.characterCountBanner}>
+                <Text style={styles.characterCountText}>
+                  First message: {characterCount} / 36 characters minimum
+                </Text>
+              </View>
+            )}
+            <View style={styles.inputRow}>
+              <TextInput
+                style={styles.input}
+                placeholder={
+                  isFirstMessage
+                    ? 'Write a thoughtful opener (36+ chars)...'
+                    : 'Type a message...'
+                }
+                placeholderTextColor={colors.textLight}
+                value={newMessage}
+                onChangeText={setNewMessage}
+                multiline
+                maxLength={500}
               />
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.sendButton,
+                  (sending || newMessage.trim().length === 0) &&
+                    styles.sendButtonDisabled,
+                ]}
+                onPress={handleSend}
+                disabled={sending || newMessage.trim().length === 0}
+              >
+                {sending ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <IconSymbol ios_icon_name="paperplane.fill" android_material_icon_name="send" size={20} color="#FFFFFF" />
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
-          <View style={styles.actions}>
-            <TouchableOpacity style={styles.actionButton} onPress={handleSnooze}>
-              <IconSymbol
-                ios_icon_name="clock"
-                android_material_icon_name="schedule"
-                size={20}
-                color={colors.textSecondary}
-              />
-              <Text style={styles.actionButtonText}>Snooze</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton} onPress={handleEndConversation}>
-              <IconSymbol
-                ios_icon_name="xmark.circle"
-                android_material_icon_name="cancel"
-                size={20}
-                color={colors.error}
-              />
-              <Text style={[styles.actionButtonText, { color: colors.error }]}>
-                End Conversation
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#FFFFFF',
   },
   keyboardView: {
     flex: 1,
   },
-  messagesList: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  messageContainer: {
-    marginBottom: 12,
-    maxWidth: '80%',
-  },
-  messageContainerMe: {
-    alignSelf: 'flex-end',
-  },
-  messageContainerOther: {
-    alignSelf: 'flex-start',
-  },
-  messageBubble: {
-    borderRadius: 16,
-    padding: 12,
-  },
-  messageBubbleMe: {
-    backgroundColor: colors.primary,
-  },
-  messageBubbleOther: {
-    backgroundColor: colors.card,
-  },
-  messageText: {
-    fontSize: 15,
-    lineHeight: 20,
-  },
-  messageTextMe: {
-    color: '#FFFFFF',
-  },
-  messageTextOther: {
-    color: colors.text,
-  },
-  messageTime: {
-    fontSize: 11,
-    marginTop: 4,
-  },
-  messageTimeMe: {
-    color: 'rgba(255, 255, 255, 0.7)',
-  },
-  messageTimeOther: {
-    color: colors.textSecondary,
-  },
-  openerBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 8,
-    paddingVertical: 2,
-    paddingHorizontal: 8,
-    alignSelf: 'flex-start',
-    marginBottom: 6,
-  },
-  openerBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  openerHint: {
+  headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.highlight,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 8,
+    marginRight: 8,
   },
-  openerHintText: {
-    flex: 1,
-    fontSize: 13,
+  headerButton: {
+    marginLeft: 16,
+  },
+  messagesList: {
+    padding: 16,
+  },
+  messageContainer: {
+    maxWidth: '75%',
+    marginBottom: 12,
+    padding: 12,
+    borderRadius: 16,
+  },
+  myMessage: {
+    alignSelf: 'flex-end',
+    backgroundColor: colors.primary,
+  },
+  theirMessage: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#F0F0F0',
+  },
+  messageText: {
+    fontSize: 16,
     color: colors.text,
-    lineHeight: 18,
+    lineHeight: 22,
+  },
+  myMessageText: {
+    color: '#FFFFFF',
+  },
+  timestamp: {
+    fontSize: 12,
+    color: colors.textLight,
+    marginTop: 4,
+  },
+  myTimestamp: {
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   inputContainer: {
-    backgroundColor: colors.background,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
+    backgroundColor: '#FFFFFF',
   },
-  inputWrapper: {
+  characterCountBanner: {
+    backgroundColor: '#FFF3CD',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#FFE69C',
+  },
+  characterCountText: {
+    fontSize: 12,
+    color: '#856404',
+    textAlign: 'center',
+  },
+  inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    backgroundColor: colors.card,
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginBottom: 8,
+    padding: 12,
   },
   input: {
     flex: 1,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     fontSize: 16,
     color: colors.text,
     maxHeight: 100,
-    paddingVertical: 8,
+    marginRight: 8,
   },
   sendButton: {
-    marginLeft: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sendButtonDisabled: {
-    opacity: 0.5,
-  },
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  actionButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.textSecondary,
+    backgroundColor: colors.border,
   },
 });

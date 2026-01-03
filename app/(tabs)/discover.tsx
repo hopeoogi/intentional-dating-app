@@ -1,7 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { colors, commonStyles } from '@/styles/commonStyles';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   View,
   Text,
@@ -11,10 +9,13 @@ import {
   TouchableOpacity,
   Dimensions,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { authenticatedGet } from '@/utils/api';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useRouter } from 'expo-router';
+import { colors, commonStyles } from '@/styles/commonStyles';
 
 interface Match {
   id: string;
@@ -25,6 +26,8 @@ interface Match {
   photos: string[];
   status: string;
 }
+
+const { width } = Dimensions.get('window');
 
 export default function DiscoverScreen() {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -38,15 +41,24 @@ export default function DiscoverScreen() {
   const loadDailyMatches = async () => {
     try {
       setLoading(true);
-      // TODO: Backend Integration - Fetch daily matches from the backend API
-      const response = await authenticatedGet('/api/matches/daily');
-      if (response.ok) {
-        const data = await response.json();
-        setMatches(data.matches || []);
-      }
-    } catch (error) {
-      console.error('Error loading matches:', error);
-      Alert.alert('Error', 'Failed to load daily matches');
+      const data = await authenticatedGet('/api/matches');
+      console.log('[Discover] Loaded matches:', data);
+      
+      // Transform the API response to match our interface
+      const transformedMatches = (data.matches || []).map((match: any) => ({
+        id: match.id || match.userId,
+        name: match.name || 'Unknown',
+        age: match.age || 0,
+        location: match.location || 'Unknown',
+        bio: match.bio || '',
+        photos: match.photos || [],
+        status: match.status || 'unverified',
+      }));
+      
+      setMatches(transformedMatches);
+    } catch (error: any) {
+      console.error('[Discover] Failed to load matches:', error);
+      Alert.alert('Error', error.message || 'Failed to load matches');
     } finally {
       setLoading(false);
     }
@@ -57,77 +69,82 @@ export default function DiscoverScreen() {
   };
 
   const handleStartConversation = (matchId: string) => {
-    router.push(`/conversation/${matchId}`);
+    router.push(`/conversation/new?matchId=${matchId}`);
   };
+
+  if (loading) {
+    return (
+      <View style={commonStyles.centered}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Today&apos;s Matches</Text>
-        <Text style={styles.headerSubtitle}>
-          {matches.length} intentional connections
-        </Text>
+        <TouchableOpacity onPress={loadDailyMatches}>
+          <IconSymbol ios_icon_name="arrow.clockwise" android_material_icon_name="refresh" size={24} color={colors.text} />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView}>
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Loading matches...</Text>
-          </View>
-        ) : matches.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <IconSymbol 
-              ios_icon_name="heart.slash" 
-              android_material_icon_name="heart-broken" 
-              size={64} 
-              color={colors.textSecondary} 
-            />
-            <Text style={styles.emptyText}>No matches today</Text>
-            <Text style={styles.emptySubtext}>
-              Check back tomorrow for new connections
-            </Text>
-          </View>
-        ) : (
-          matches.map((match, index) => (
-            <View key={index} style={styles.matchCard}>
-              <Image
-                source={{ uri: match.photos[0] || 'https://via.placeholder.com/400' }}
-                style={styles.matchImage}
-              />
-              <View style={styles.matchInfo}>
-                <View style={styles.matchHeader}>
-                  <Text style={styles.matchName}>
-                    {match.name}, {match.age}
+      {matches.length === 0 ? (
+        <View style={commonStyles.centered}>
+          <IconSymbol ios_icon_name="heart.slash" android_material_icon_name="favorite-border" size={64} color={colors.textLight} />
+          <Text style={styles.emptyTitle}>No Matches Today</Text>
+          <Text style={styles.emptyText}>
+            Check back tomorrow for new matches!
+          </Text>
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          {matches.map((match) => (
+            <View key={match.id} style={styles.matchCard}>
+              <TouchableOpacity
+                onPress={() => handleViewProfile(match.id)}
+                activeOpacity={0.9}
+              >
+                <Image
+                  source={{ uri: match.photos[0] || 'https://via.placeholder.com/400x500' }}
+                  style={styles.matchImage}
+                />
+                <View style={styles.matchInfo}>
+                  <View style={styles.matchHeader}>
+                    <Text style={styles.matchName}>{match.name}, {match.age}</Text>
+                    {match.status === 'verified' && (
+                      <IconSymbol ios_icon_name="checkmark.seal.fill" android_material_icon_name="verified" size={20} color={colors.primary} />
+                    )}
+                  </View>
+                  <View style={styles.locationRow}>
+                    <IconSymbol ios_icon_name="location.fill" android_material_icon_name="location-on" size={16} color={colors.textLight} />
+                    <Text style={styles.matchLocation}>{match.location}</Text>
+                  </View>
+                  <Text style={styles.matchBio} numberOfLines={2}>
+                    {match.bio}
                   </Text>
-                  {match.status && (
-                    <View style={styles.statusBadge}>
-                      <Text style={styles.statusText}>{match.status}</Text>
-                    </View>
-                  )}
                 </View>
-                <Text style={styles.matchLocation}>{match.location}</Text>
-                <Text style={styles.matchBio} numberOfLines={3}>
-                  {match.bio}
-                </Text>
-                <View style={styles.actionButtons}>
-                  <TouchableOpacity
-                    style={[styles.button, styles.secondaryButton]}
-                    onPress={() => handleViewProfile(match.id)}
-                  >
-                    <Text style={styles.secondaryButtonText}>View Profile</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.button, styles.primaryButton]}
-                    onPress={() => handleStartConversation(match.id)}
-                  >
-                    <Text style={styles.primaryButtonText}>Start Chat</Text>
-                  </TouchableOpacity>
-                </View>
+              </TouchableOpacity>
+
+              <View style={styles.actions}>
+                <TouchableOpacity
+                  style={styles.viewButton}
+                  onPress={() => handleViewProfile(match.id)}
+                >
+                  <Text style={styles.viewButtonText}>View Profile</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.messageButton}
+                  onPress={() => handleStartConversation(match.id)}
+                >
+                  <IconSymbol ios_icon_name="paperplane.fill" android_material_icon_name="send" size={18} color="#FFFFFF" />
+                  <Text style={styles.messageButtonText}>Start Chat</Text>
+                </TouchableOpacity>
               </View>
             </View>
-          ))
-        )}
-      </ScrollView>
+          ))}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -135,116 +152,113 @@ export default function DiscoverScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#FFFFFF',
   },
   header: {
-    padding: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   headerTitle: {
-    ...commonStyles.title,
-    marginBottom: 4,
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.text,
   },
-  headerSubtitle: {
-    ...commonStyles.subtitle,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  loadingText: {
-    ...commonStyles.body,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  emptyText: {
-    ...commonStyles.title,
-    marginTop: 16,
-  },
-  emptySubtext: {
-    ...commonStyles.subtitle,
-    marginTop: 8,
+  scrollContent: {
+    padding: 16,
   },
   matchCard: {
-    margin: 16,
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    backgroundColor: colors.surface,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
     overflow: 'hidden',
-    ...commonStyles.shadow,
   },
   matchImage: {
     width: '100%',
-    height: Dimensions.get('window').width - 32,
-    backgroundColor: colors.border,
+    height: width * 1.2,
   },
   matchInfo: {
     padding: 16,
   },
   matchHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 4,
   },
   matchName: {
-    ...commonStyles.title,
-    flex: 1,
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginRight: 8,
   },
-  statusBadge: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   matchLocation: {
-    ...commonStyles.subtitle,
-    marginBottom: 12,
+    fontSize: 14,
+    color: colors.textLight,
+    marginLeft: 4,
   },
   matchBio: {
-    ...commonStyles.body,
-    marginBottom: 16,
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 20,
   },
-  actionButtons: {
+  actions: {
     flexDirection: 'row',
+    padding: 16,
     gap: 12,
   },
-  button: {
+  viewButton: {
     flex: 1,
     paddingVertical: 12,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.primary,
     alignItems: 'center',
   },
-  primaryButton: {
-    backgroundColor: colors.primary,
+  viewButtonText: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: '600',
   },
-  primaryButtonText: {
+  messageButton: {
+    flex: 1,
+    flexDirection: 'row',
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  messageButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
-  secondaryButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  secondaryButtonText: {
-    color: colors.text,
-    fontSize: 16,
+  emptyTitle: {
+    fontSize: 20,
     fontWeight: '600',
+    color: colors.text,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: colors.textLight,
+    textAlign: 'center',
+    paddingHorizontal: 40,
   },
 });

@@ -1,7 +1,7 @@
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,11 +10,14 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { useRouter } from 'expo-router';
-import { GlassView } from 'expo-glass-effect';
+// Note: expo-glass-effect is not installed, using regular View instead
+// import { GlassView } from 'expo-glass-effect';
+import { authenticatedGet } from '@/utils/api';
 
 const styles = StyleSheet.create({
   container: {
@@ -113,6 +116,34 @@ const styles = StyleSheet.create({
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const [profileData, setProfileData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      setLoading(true);
+      const data = await authenticatedGet('/api/profile');
+      console.log('[Profile] Loaded profile data:', data);
+      setProfileData(data);
+    } catch (error: any) {
+      console.error('[Profile] Failed to load profile:', error);
+      // Use fallback data if API fails
+      setProfileData({
+        name: user?.name || 'User',
+        email: user?.email || 'user@example.com',
+        age: 0,
+        location: 'Unknown',
+        status: 'Unverified',
+        bio: '',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSignOut = async () => {
     Alert.alert(
@@ -137,27 +168,34 @@ export default function ProfileScreen() {
     );
   };
 
-  // TODO: Backend Integration - Fetch user profile data from the backend API
-  const mockUserData = {
-    name: user?.name || 'User',
-    email: user?.email || 'user@example.com',
-    age: 28,
-    location: 'San Francisco, CA',
-    status: 'Verified',
-    bio: 'Looking for meaningful connections',
+  const userData = {
+    name: profileData?.name || user?.name || 'User',
+    email: profileData?.email || user?.email || 'user@example.com',
+    age: profileData?.age || 0,
+    location: profileData?.location || 'Unknown',
+    status: profileData?.verificationStatus || 'Unverified',
+    bio: profileData?.bio || 'No bio yet',
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-        <GlassView style={styles.profileHeader} glassEffectStyle="regular">
+        <View style={[styles.profileHeader, { backgroundColor: 'rgba(255, 255, 255, 0.95)' }]}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
-              {mockUserData.name.charAt(0).toUpperCase()}
+              {userData.name.charAt(0).toUpperCase()}
             </Text>
           </View>
-          <Text style={styles.name}>{mockUserData.name}</Text>
-          <Text style={styles.email}>{mockUserData.email}</Text>
+          <Text style={styles.name}>{userData.name}</Text>
+          <Text style={styles.email}>{userData.email}</Text>
           <View style={styles.statusBadge}>
             <IconSymbol
               ios_icon_name="checkmark.seal.fill"
@@ -165,23 +203,25 @@ export default function ProfileScreen() {
               size={16}
               color="#FFFFFF"
             />
-            <Text style={styles.statusText}>{mockUserData.status}</Text>
+            <Text style={styles.statusText}>{userData.status}</Text>
           </View>
-        </GlassView>
+        </View>
 
-        <GlassView style={styles.section} glassEffectStyle="regular">
+        <View style={[styles.section, { backgroundColor: 'rgba(255, 255, 255, 0.95)' }]}>
           <Text style={styles.sectionTitle}>Profile Information</Text>
           
-          <View style={styles.infoRow}>
-            <IconSymbol
-              ios_icon_name="person.fill"
-              android_material_icon_name="person"
-              size={20}
-              color={colors.primary}
-            />
-            <Text style={styles.infoLabel}>Age</Text>
-            <Text style={styles.infoValue}>{mockUserData.age}</Text>
-          </View>
+          {userData.age > 0 && (
+            <View style={styles.infoRow}>
+              <IconSymbol
+                ios_icon_name="person.fill"
+                android_material_icon_name="person"
+                size={20}
+                color={colors.primary}
+              />
+              <Text style={styles.infoLabel}>Age</Text>
+              <Text style={styles.infoValue}>{userData.age}</Text>
+            </View>
+          )}
 
           <View style={styles.infoRow}>
             <IconSymbol
@@ -191,7 +231,7 @@ export default function ProfileScreen() {
               color={colors.primary}
             />
             <Text style={styles.infoLabel}>Location</Text>
-            <Text style={styles.infoValue}>{mockUserData.location}</Text>
+            <Text style={styles.infoValue}>{userData.location}</Text>
           </View>
 
           <View style={[styles.infoRow, styles.infoRowLast]}>
@@ -203,10 +243,10 @@ export default function ProfileScreen() {
             />
             <Text style={styles.infoLabel}>Bio</Text>
           </View>
-          <Text style={[styles.infoValue, { marginTop: 8 }]}>{mockUserData.bio}</Text>
-        </GlassView>
+          <Text style={[styles.infoValue, { marginTop: 8 }]}>{userData.bio}</Text>
+        </View>
 
-        <GlassView style={styles.section} glassEffectStyle="regular">
+        <View style={[styles.section, { backgroundColor: 'rgba(255, 255, 255, 0.95)' }]}>
           <Text style={styles.sectionTitle}>Settings</Text>
           
           <TouchableOpacity style={styles.infoRow}>
@@ -256,7 +296,7 @@ export default function ProfileScreen() {
               color={colors.textSecondary}
             />
           </TouchableOpacity>
-        </GlassView>
+        </View>
 
         <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
           <Text style={styles.signOutButtonText}>Sign Out</Text>

@@ -10,10 +10,12 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { BACKEND_URL, getBearerToken } from '@/utils/api';
+import { colors, buttonStyles } from '@/styles/commonStyles';
+import { IconSymbol } from '@/components/IconSymbol';
 
 interface MediaItem {
   uri: string;
@@ -21,57 +23,56 @@ interface MediaItem {
 }
 
 export default function MediaScreen() {
-  const router = useRouter();
-  const [media, setMedia] = useState<MediaItem[]>([]);
+  const [photos, setPhotos] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const pickMedia = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Please grant camera roll permissions');
+    if (photos.length >= 6) {
+      Alert.alert('Limit Reached', 'You can upload up to 6 photos');
       return;
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images', 'videos'],
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: true,
-      aspect: [3, 4],
+      aspect: [4, 5],
       quality: 0.8,
     });
 
-    if (!result.canceled && result.assets[0]) {
-      const newMedia: MediaItem = {
-        uri: result.assets[0].uri,
-        type: result.assets[0].type === 'video' ? 'video' : 'photo',
-      };
-      setMedia([...media, newMedia]);
+    if (!result.canceled) {
+      const asset = result.assets[0];
+      setPhotos([...photos, {
+        uri: asset.uri,
+        type: asset.type === 'video' ? 'video' : 'photo',
+      }]);
     }
   };
 
   const removeMedia = (index: number) => {
-    setMedia(media.filter((_, i) => i !== index));
+    setPhotos(photos.filter((_, i) => i !== index));
   };
 
   const handleContinue = async () => {
-    if (media.length < 2) {
-      Alert.alert('More photos needed', 'Please upload at least 2 photos');
+    if (photos.length < 3) {
+      Alert.alert('More Photos Needed', 'Please upload at least 3 photos');
       return;
     }
 
+    setLoading(true);
     try {
-      setLoading(true);
       const token = await getBearerToken();
       
-      // Upload each media item
-      for (const item of media) {
+      for (const media of photos) {
         const formData = new FormData();
         formData.append('file', {
-          uri: item.uri,
-          type: item.type === 'video' ? 'video/mp4' : 'image/jpeg',
-          name: `media_${Date.now()}.${item.type === 'video' ? 'mp4' : 'jpg'}`,
+          uri: media.uri,
+          type: media.type === 'video' ? 'video/mp4' : 'image/jpeg',
+          name: `${media.type}.${media.type === 'video' ? 'mp4' : 'jpg'}`,
         } as any);
 
-        const endpoint = item.type === 'video' ? '/api/profile/videos' : '/api/profile/photos';
+        const endpoint = media.type === 'video' ? '/api/profile/videos' : '/api/profile/photos';
+        
         await fetch(`${BACKEND_URL}${endpoint}`, {
           method: 'POST',
           headers: {
@@ -90,41 +91,48 @@ export default function MediaScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.title}>Add Photos & Videos</Text>
-          <Text style={styles.subtitle}>Upload at least 2 photos (max 6)</Text>
+          <Text style={styles.title}>Add Photos & Video</Text>
+          <Text style={styles.subtitle}>Upload at least 3 photos (max 6)</Text>
         </View>
 
-        <View style={styles.mediaGrid}>
-          {media.map((item, index) => (
+        <View style={styles.grid}>
+          {photos.map((media, index) => (
             <View key={index} style={styles.mediaItem}>
-              <Image source={{ uri: item.uri }} style={styles.mediaImage} />
+              <Image source={{ uri: media.uri }} style={styles.mediaImage} />
               <TouchableOpacity
                 style={styles.removeButton}
                 onPress={() => removeMedia(index)}
               >
-                <Text style={styles.removeButtonText}>✕</Text>
+                <IconSymbol name="xmark.circle.fill" size={24} color="#FF3B30" />
               </TouchableOpacity>
+              {media.type === 'video' && (
+                <View style={styles.videoBadge}>
+                  <IconSymbol name="play.circle.fill" size={32} color="#FFFFFF" />
+                </View>
+              )}
             </View>
           ))}
-          {media.length < 6 && (
+
+          {photos.length < 6 && (
             <TouchableOpacity style={styles.addButton} onPress={pickMedia}>
-              <Text style={styles.addButtonText}>+</Text>
+              <IconSymbol name="plus.circle.fill" size={48} color={colors.primary} />
+              <Text style={styles.addButtonText}>Add Photo/Video</Text>
             </TouchableOpacity>
           )}
         </View>
 
         <TouchableOpacity
-          style={[styles.button, (loading || media.length < 2) && styles.buttonDisabled]}
+          style={[buttonStyles.primary, (loading || photos.length < 3) && styles.buttonDisabled]}
           onPress={handleContinue}
-          disabled={loading || media.length < 2}
+          disabled={loading || photos.length < 3}
         >
           {loading ? (
-            <ActivityIndicator color="#FFF" />
+            <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.buttonText}>Continue</Text>
+            <Text style={buttonStyles.primaryText}>Continue</Text>
           )}
         </TouchableOpacity>
       </ScrollView>
@@ -135,26 +143,28 @@ export default function MediaScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 20,
+    padding: 24,
   },
   header: {
+    alignItems: 'center',
+    marginTop: 20,
     marginBottom: 32,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textLight,
   },
-  mediaGrid: {
+  grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
@@ -162,7 +172,7 @@ const styles = StyleSheet.create({
   },
   mediaItem: {
     width: '48%',
-    aspectRatio: 3 / 4,
+    aspectRatio: 4 / 5,
     marginBottom: 16,
     borderRadius: 12,
     overflow: 'hidden',
@@ -175,46 +185,33 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 12,
   },
-  removeButtonText: {
-    color: '#FFF',
-    fontSize: 20,
-    fontWeight: 'bold',
+  videoBadge: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -16 }, { translateY: -16 }],
   },
   addButton: {
     width: '48%',
-    aspectRatio: 3 / 4,
+    aspectRatio: 4 / 5,
     marginBottom: 16,
     borderRadius: 12,
-    backgroundColor: '#FFF',
     borderWidth: 2,
-    borderColor: '#DDD',
+    borderColor: colors.border,
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F8F8F8',
   },
   addButtonText: {
-    fontSize: 48,
-    color: '#999',
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-    padding: 18,
-    alignItems: 'center',
+    marginTop: 8,
+    fontSize: 14,
+    color: colors.textLight,
   },
   buttonDisabled: {
     opacity: 0.6,
-  },
-  buttonText: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: '600',
   },
 });

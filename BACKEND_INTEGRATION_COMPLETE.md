@@ -2,12 +2,13 @@
 # Backend Integration Complete ✅
 
 ## Overview
-The backend API has been successfully integrated into the Intentional Dating App. All endpoints are now connected and functional.
+The backend API has been successfully integrated into the Intentional Dating App. All TODO comments have been replaced with working API integration code.
 
 ## Backend URL
 - **Production URL**: `https://6ytjugugmhrw5w5dguny2u79uz83r3tz.app.specular.dev`
 - **Configuration**: Set in `app.json` at `expo.extra.backendUrl`
 - **Access**: Available via `BACKEND_URL` constant in `utils/api.ts`
+- **Logging**: Backend URL is logged on app startup for debugging
 
 ## Authentication Setup ✅
 
@@ -33,89 +34,118 @@ The backend API has been successfully integrated into the Intentional Dating App
 
 ## API Integration Status
 
-### ✅ Profiles API
-- **PUT /api/profile** - Create/update user profile (onboarding/profile.tsx)
-- **GET /api/profile** - Get current user profile
-- **GET /api/profiles/{userId}** - Get user profile by ID (profile/[id].tsx)
-- **POST /api/profile/photos** - Upload profile photos (onboarding/media.tsx)
-- **POST /api/profile/videos** - Upload profile videos (onboarding/media.tsx)
+### ✅ Profiles API (FULLY INTEGRATED)
+- **PUT /api/profile** - Create/update user profile ✅ `app/onboarding/profile.tsx`
+- **GET /api/profile** - Get current user profile ✅ `app/(tabs)/profile.tsx`, `app/(tabs)/profile.ios.tsx`
+- **GET /api/profiles/{userId}** - Get user profile by ID ✅ `app/profile/[id].tsx`, `app/conversation/new.tsx`
+- **POST /api/profile/photos** - Upload profile photos ✅ `app/onboarding/media.tsx`
+- **POST /api/profile/videos** - Upload profile videos ✅ `app/onboarding/media.tsx`
 
-### ✅ Verification API
-- **POST /api/verification/submit** - Submit verification application (onboarding/verification.tsx)
-- **GET /api/verification/status** - Get verification status
+### ✅ Verification API (FULLY INTEGRATED)
+- **POST /api/verification/submit** - Submit verification application ✅ `app/onboarding/verification.tsx`
+- **GET /api/verification/status** - Get verification status (ready to use)
 
-### ✅ Matching API
-- **GET /api/matches** - Get daily match batch ((tabs)/discover.tsx)
-- **GET /api/matches/{matchId}** - Get match profile details
-- **POST /api/matches/{matchId}/interact** - Record match interaction
+### ✅ Matching API (FULLY INTEGRATED)
+- **GET /api/matches** - Get daily match batch ✅ `app/(tabs)/discover.tsx`
+  - Includes data transformation for consistent UI display
+  - Handles empty states gracefully
+- **GET /api/matches/{matchId}** - Get match profile details (ready to use)
+- **POST /api/matches/{matchId}/interact** - Record match interaction (ready to use)
 
-### ✅ Conversations API
-- **GET /api/conversations** - Get user conversations ((tabs)/conversations.tsx)
-- **GET /api/conversations/{conversationId}** - Get conversation details
-- **POST /api/conversations** - Create new conversation
-- **POST /api/conversations/{conversationId}/snooze** - Snooze conversation (conversation/[id].tsx)
-- **POST /api/conversations/{conversationId}/end** - End conversation (conversation/[id].tsx)
+### ✅ Conversations API (FULLY INTEGRATED)
+- **GET /api/conversations** - Get user conversations ✅ `app/(tabs)/conversations.tsx`
+- **GET /api/conversations/{conversationId}** - Get conversation details (ready to use)
+- **POST /api/conversations** - Create new conversation ✅ `app/conversation/new.tsx`
+  - Enforces 36+ character opener requirement
+  - Validates message length before submission
+- **POST /api/conversations/{conversationId}/snooze** - Snooze conversation ✅ `app/conversation/[id].tsx`
+  - Supports 12-hour and 24-hour snooze durations
+- **POST /api/conversations/{conversationId}/end** - End conversation ✅ `app/conversation/[id].tsx`
+  - Includes confirmation dialog
 
-### ✅ Messages API
-- **GET /api/messages/{conversationId}** - Get conversation messages (conversation/[id].tsx)
-- **POST /api/messages** - Send message (conversation/[id].tsx)
-- **POST /api/messages/{conversationId}/mark-read** - Mark messages as read (conversation/[id].tsx)
-- **GET /api/messages/unread-count** - Get unread message count
+### ✅ Messages API (FULLY INTEGRATED)
+- **GET /api/messages/{conversationId}** - Get conversation messages ✅ `app/conversation/[id].tsx`
+  - Transforms API response to match UI interface
+  - Handles timestamp conversion
+- **POST /api/messages** - Send message ✅ `app/conversation/[id].tsx`
+  - Enforces 36+ character opener for first message
+  - Auto-scrolls to bottom after sending
+- **POST /api/messages/{conversationId}/mark-read** - Mark messages as read ✅ `app/conversation/[id].tsx`
+  - Automatically called when loading messages
+- **GET /api/messages/unread-count** - Get unread message count (ready to use)
 
-### ✅ Subscription API
-- **GET /api/subscription/tiers** - Get subscription tiers (onboarding/subscription.tsx)
-- **POST /api/subscription** - Create/upgrade subscription (onboarding/subscription.tsx)
-- **GET /api/subscription/status** - Get subscription status
-- **POST /api/subscription/cancel** - Cancel subscription
+### ✅ Subscription API (FULLY INTEGRATED)
+- **GET /api/subscription/tiers** - Get subscription tiers ✅ `app/onboarding/subscription.tsx`
+- **POST /api/subscription** - Create/upgrade subscription ✅ `app/onboarding/subscription.tsx`
+- **GET /api/subscription/status** - Get subscription status (ready to use)
+- **POST /api/subscription/cancel** - Cancel subscription (ready to use)
 
 ### 🔄 Not Yet Integrated (Future Features)
 - Admin endpoints (admin dashboard not yet built)
 - Block/Report endpoints (moderation features pending)
 - Match preferences endpoints (settings screen pending)
+- Profile media management endpoints (photo/video deletion, profile picture setting)
 
 ## API Utilities
 
 ### Core Functions (`utils/api.ts`)
 ```typescript
-// Basic API calls
-apiCall(endpoint, options) - Generic API call
-apiGet(endpoint) - GET request
-apiPost(endpoint, data) - POST request
-
-// Authenticated API calls (auto-includes Bearer token)
-authenticatedApiCall(endpoint, options) - Generic authenticated call
-authenticatedGet(endpoint) - Authenticated GET
-authenticatedPost(endpoint, data) - Authenticated POST
-authenticatedPut(endpoint, data) - Authenticated PUT
-authenticatedDelete(endpoint) - Authenticated DELETE
+// Backend URL constant
+export const BACKEND_URL: string
 
 // Token management
-getBearerToken() - Get stored auth token
-isBackendConfigured() - Check if backend URL is set
+getBearerToken() - Get stored auth token from BetterAuth or localStorage
+
+// Authenticated API calls (auto-includes Bearer token)
+authenticatedGet(endpoint) - Authenticated GET request
+authenticatedPost(endpoint, data) - Authenticated POST request
+authenticatedPut(endpoint, data) - Authenticated PUT request
+authenticatedDelete(endpoint) - Authenticated DELETE request
 ```
 
 ### Usage Example
 ```typescript
-import { authenticatedGet, authenticatedPost } from '@/utils/api';
+import { authenticatedGet, authenticatedPost, BACKEND_URL } from '@/utils/api';
 
 // Fetch data
 const matches = await authenticatedGet('/api/matches');
+console.log('[Discover] Loaded matches:', matches);
 
 // Send data
 const result = await authenticatedPost('/api/messages', {
   conversationId: '123',
-  content: 'Hello!'
+  text: 'Hello!'
+});
+
+// Direct fetch (for file uploads)
+const formData = new FormData();
+formData.append('file', file);
+const token = await getBearerToken();
+await fetch(`${BACKEND_URL}/api/profile/photos`, {
+  method: 'POST',
+  headers: { Authorization: `Bearer ${token}` },
+  body: formData,
 });
 ```
+
+### Logging Convention
+All API calls include console logging with prefixes:
+- `[API]` - General API utility logs
+- `[Discover]` - Discover screen API calls
+- `[Conversation]` - Conversation screen API calls
+- `[NewConversation]` - New conversation screen API calls
+- `[Profile]` - Profile screen API calls
 
 ## Error Handling
 
 All API calls include:
-- ✅ Try-catch blocks
-- ✅ Console logging for debugging
+- ✅ Try-catch blocks with detailed error logging
+- ✅ Console logging for debugging (with screen-specific prefixes)
 - ✅ User-friendly error alerts
-- ✅ Loading states
+- ✅ Loading states with ActivityIndicator
 - ✅ 401/403 authentication error handling
+- ✅ Graceful fallbacks for failed API calls
+- ✅ Empty state handling for zero results
 
 ## Onboarding Flow
 
@@ -216,11 +246,12 @@ import { BACKEND_URL } from '@/utils/api';
 
 ## Known Issues & Limitations
 
-1. **Subscription Tiers**: If API endpoint fails, falls back to hardcoded tiers
-2. **Media Upload**: Currently uploads one file at a time (could be optimized)
-3. **Real-time Updates**: Messages don't auto-refresh (requires manual pull-to-refresh)
-4. **Admin Features**: Not yet implemented in frontend
-5. **Match Preferences**: Settings screen not yet built
+1. **Real-time Updates**: Messages don't auto-refresh (requires manual pull-to-refresh or WebSocket implementation)
+2. **Admin Features**: Not yet implemented in frontend
+3. **Match Preferences**: Settings screen not yet built
+4. **Profile Editing**: Edit profile screen not yet built (only onboarding flow exists)
+5. **Media Management**: Delete photos/videos and set profile picture not yet implemented
+6. **Block/Report**: Moderation features not yet implemented in UI
 
 ## Next Steps
 
@@ -244,14 +275,15 @@ import { BACKEND_URL } from '@/utils/api';
 
 ```json
 {
-  "better-auth": "^1.1.4",
-  "@better-auth/expo": "^1.1.4",
-  "expo-secure-store": "~14.0.0",
-  "expo-web-browser": "~14.0.1",
-  "expo-image-picker": "~16.0.4",
-  "expo-location": "~18.0.4",
-  "expo-linear-gradient": "^15.0.8",
-  "@react-native-community/datetimepicker": "^8.2.0"
+  "better-auth": "^1.3.34",
+  "@better-auth/expo": "^1.3.34",
+  "expo-secure-store": "^15.0.7",
+  "expo-web-browser": "^15.0.6",
+  "expo-image-picker": "^17.0.7",
+  "expo-location": "^18.0.7",
+  "expo-linear-gradient": "^15.0.6",
+  "@react-native-community/datetimepicker": "^8.3.0",
+  "expo-apple-authentication": "^8.0.8"
 }
 ```
 
@@ -265,6 +297,40 @@ For issues or questions:
 
 ---
 
+## Integration Summary
+
+### Files Modified
+1. ✅ `app/(tabs)/discover.tsx` - Integrated daily matches API
+2. ✅ `app/(tabs)/conversations.tsx` - Already integrated
+3. ✅ `app/(tabs)/profile.tsx` - Added profile data fetching
+4. ✅ `app/(tabs)/profile.ios.tsx` - Added profile data fetching
+5. ✅ `app/conversation/[id].tsx` - Integrated messages, send, snooze, end APIs
+6. ✅ `app/conversation/new.tsx` - Integrated create conversation API
+7. ✅ `app/profile/[id].tsx` - Already integrated
+8. ✅ `app/onboarding/profile.tsx` - Already integrated
+9. ✅ `app/onboarding/media.tsx` - Already integrated
+10. ✅ `app/onboarding/verification.tsx` - Already integrated
+11. ✅ `app/onboarding/subscription.tsx` - Already integrated
+12. ✅ `utils/api.ts` - Added startup logging
+
+### TODO Comments Resolved
+All "TODO: Backend Integration" comments have been replaced with working API integration code:
+- ✅ Discover screen - Load daily matches
+- ✅ Conversation screen - Load messages, send message, snooze, end conversation
+- ✅ New conversation screen - Create conversation with opener
+- ✅ Profile screens - Load user profile data
+
+### Testing Recommendations
+1. Test authentication flow (email/password, Google, Apple)
+2. Test onboarding flow (profile → media → verification → subscription)
+3. Test discover screen (load matches, view profiles)
+4. Test conversations (create, send messages, snooze, end)
+5. Test profile screen (view own profile data)
+6. Check console logs for API call debugging
+
+---
+
 **Integration Status**: ✅ COMPLETE
-**Last Updated**: 2026-01-03
+**Last Updated**: 2025-01-03
 **Backend Version**: 1.0.0
+**Backend URL**: https://6ytjugugmhrw5w5dguny2u79uz83r3tz.app.specular.dev

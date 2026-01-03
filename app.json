@@ -1,33 +1,37 @@
-
 {
   "expo": {
     "name": "Intentional",
     "slug": "intentional-dating",
-    "version": "1.0.1",
+    "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/96e0c1f0-fcef-4b76-b942-74280a3296cb.png",
+    "icon": "./assets/images/natively-dark.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/96e0c1f0-fcef-4b76-b942-74280a3296cb.png",
+      "image": "./assets/images/natively-dark.png",
       "resizeMode": "contain",
-      "backgroundColor": "#5B4FE9"
+      "backgroundColor": "#FF6B9D"
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.intentional.dating",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSPhotoLibraryUsageDescription": "We need access to your photo library to upload profile photos",
-        "NSCameraUsageDescription": "We need access to your camera to take profile photos",
-        "NSLocationWhenInUseUsageDescription": "We need your location to show you matches nearby"
+        "NSCameraUsageDescription": "We need access to your camera to take profile photos and videos.",
+        "NSPhotoLibraryUsageDescription": "We need access to your photo library to upload profile photos and videos.",
+        "NSLocationWhenInUseUsageDescription": "We use your location to show you matches nearby."
       },
-      "buildNumber": "1.0.2"
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "associatedDomains": [
+        "applinks:intentional.dating"
+      ]
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/96e0c1f0-fcef-4b76-b942-74280a3296cb.png",
-        "backgroundColor": "#5B4FE9"
+        "foregroundImage": "./assets/images/natively-dark.png",
+        "backgroundColor": "#FF6B9D"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.intentional.dating",
@@ -38,23 +42,52 @@
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"
       ],
-      "versionCode": 2
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "intentional.dating",
+              "pathPrefix": "/auth"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "web": {
-      "favicon": "./assets/images/96e0c1f0-fcef-4b76-b942-74280a3296cb.png",
+      "favicon": "./assets/images/final_quest_240x240.png",
       "bundler": "metro"
     },
     "plugins": [
       "expo-font",
       "expo-router",
+      "expo-web-browser",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Intentional to access your photos to upload profile pictures.",
+          "cameraPermission": "Allow Intentional to access your camera to take profile pictures."
+        }
+      ],
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow Intentional to use your location to show you matches nearby."
+          "locationWhenInUsePermission": "Allow Intentional to use your location to find matches nearby."
         }
       ],
-      "expo-image-picker",
-      "expo-secure-store"
+      [
+        "expo-apple-authentication",
+        {
+          "appleTeamId": "YOUR_APPLE_TEAM_ID"
+        }
+      ]
     ],
     "scheme": "intentional",
     "experiments": {
@@ -64,10 +97,10 @@
       "router": {
         "origin": false
       },
+      "backendUrl": "https://6ytjugugmhrw5w5dguny2u79uz83r3tz.app.specular.dev",
       "eas": {
-        "projectId": "your-project-id"
-      },
-      "backendUrl": "https://6ytjugugmhrw5w5dguny2u79uz83r3tz.app.specular.dev"
+        "projectId": "your-project-id-here"
+      }
     }
   }
 }

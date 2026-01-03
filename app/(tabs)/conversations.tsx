@@ -1,7 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { colors, commonStyles } from '@/styles/commonStyles';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,19 +7,27 @@ import {
   FlatList,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { authenticatedGet } from '@/utils/api';
 import { IconSymbol } from '@/components/IconSymbol';
-import { useRouter } from 'expo-router';
+import { colors, commonStyles } from '@/styles/commonStyles';
 
 interface Conversation {
   id: string;
-  matchName: string;
-  matchPhoto: string;
-  lastMessage: string;
-  timestamp: string;
-  unread: boolean;
+  otherUser: {
+    id: string;
+    name: string;
+    photo: string;
+  };
+  lastMessage: {
+    text: string;
+    timestamp: string;
+    isRead: boolean;
+  };
   status: 'active' | 'snoozed' | 'ended';
 }
 
@@ -30,26 +36,21 @@ export default function ConversationsScreen() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const loadConversations = useCallback(async () => {
+  useEffect(() => {
+    loadConversations();
+  }, []);
+
+  const loadConversations = async () => {
     try {
       setLoading(true);
-      // TODO: Backend Integration - Fetch conversations from the backend API
-      const response = await authenticatedGet('/api/conversations');
-      if (response.ok) {
-        const data = await response.json();
-        setConversations(data.conversations || []);
-      }
-    } catch (error) {
-      console.error('Error loading conversations:', error);
-      Alert.alert('Error', 'Failed to load conversations');
+      const data = await authenticatedGet('/api/conversations');
+      setConversations(data.conversations || []);
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to load conversations');
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    loadConversations();
-  }, [loadConversations]);
+  };
 
   const renderConversation = ({ item }: { item: Conversation }) => (
     <TouchableOpacity
@@ -57,50 +58,49 @@ export default function ConversationsScreen() {
       onPress={() => router.push(`/conversation/${item.id}`)}
     >
       <Image
-        source={{ uri: item.matchPhoto || 'https://via.placeholder.com/60' }}
+        source={{ uri: item.otherUser.photo || 'https://via.placeholder.com/60' }}
         style={styles.avatar}
       />
       <View style={styles.conversationContent}>
         <View style={styles.conversationHeader}>
-          <Text style={styles.matchName}>{item.matchName}</Text>
-          <Text style={styles.timestamp}>{item.timestamp}</Text>
+          <Text style={styles.conversationName}>{item.otherUser.name}</Text>
+          <Text style={styles.conversationTime}>
+            {new Date(item.lastMessage.timestamp).toLocaleDateString()}
+          </Text>
         </View>
         <Text
-          style={[styles.lastMessage, item.unread && styles.unreadMessage]}
+          style={[
+            styles.conversationMessage,
+            !item.lastMessage.isRead && styles.conversationMessageUnread,
+          ]}
           numberOfLines={1}
         >
-          {item.lastMessage}
+          {item.lastMessage.text}
         </Text>
-        {item.status !== 'active' && (
-          <Text style={styles.statusLabel}>{item.status}</Text>
-        )}
       </View>
-      {item.unread && <View style={styles.unreadDot} />}
+      {!item.lastMessage.isRead && <View style={styles.unreadBadge} />}
     </TouchableOpacity>
   );
 
+  if (loading) {
+    return (
+      <View style={commonStyles.centered}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Conversations</Text>
       </View>
 
-      {loading ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Loading...</Text>
-        </View>
-      ) : conversations.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <IconSymbol 
-            ios_icon_name="message" 
-            android_material_icon_name="message" 
-            size={64} 
-            color={colors.textSecondary} 
-          />
+      {conversations.length === 0 ? (
+        <View style={styles.emptyState}>
+          <IconSymbol name="message" size={64} color={colors.textLight} />
           <Text style={styles.emptyText}>No conversations yet</Text>
-          <Text style={styles.emptySubtext}>
-            Start a conversation from your daily matches
-          </Text>
+          <Text style={styles.emptySubtext}>Start chatting with your matches!</Text>
         </View>
       ) : (
         <FlatList
@@ -117,84 +117,85 @@ export default function ConversationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#FFFFFF',
   },
   header: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    padding: 24,
+    paddingBottom: 16,
   },
   headerTitle: {
-    ...commonStyles.title,
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: colors.text,
   },
   listContent: {
-    paddingVertical: 8,
+    padding: 16,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 80,
+  },
+  emptyText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.text,
+    marginTop: 16,
+  },
+  emptySubtext: {
+    fontSize: 16,
+    color: colors.textLight,
+    marginTop: 8,
   },
   conversationItem: {
     flexDirection: 'row',
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   avatar: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: colors.border,
+    marginRight: 16,
   },
   conversationContent: {
     flex: 1,
-    marginLeft: 12,
   },
   conversationHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 4,
   },
-  matchName: {
-    fontSize: 16,
+  conversationName: {
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
-  timestamp: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  lastMessage: {
+  conversationTime: {
     fontSize: 14,
-    color: colors.textSecondary,
+    color: colors.textLight,
   },
-  unreadMessage: {
+  conversationMessage: {
+    fontSize: 16,
+    color: colors.textLight,
+  },
+  conversationMessageUnread: {
     fontWeight: '600',
     color: colors.text,
   },
-  statusLabel: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 4,
-    fontStyle: 'italic',
-  },
-  unreadDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  unreadBadge: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
     backgroundColor: colors.primary,
     marginLeft: 8,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  emptyText: {
-    ...commonStyles.title,
-    marginTop: 16,
-  },
-  emptySubtext: {
-    ...commonStyles.subtitle,
-    marginTop: 8,
-    textAlign: 'center',
   },
 });

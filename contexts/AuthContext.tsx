@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Platform } from "react-native";
 import { authClient, storeWebBearerToken } from "@/lib/auth";
@@ -16,7 +17,6 @@ interface AuthContextType {
   signUpWithEmail: (email: string, password: string, name?: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInWithApple: () => Promise<void>;
-  signInWithGitHub: () => Promise<void>;
   signOut: () => Promise<void>;
   fetchUser: () => Promise<void>;
 }
@@ -78,8 +78,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const session = await authClient.getSession();
-      if (session?.data?.user) {
-        setUser(session.data.user as User);
+      if (session?.user) {
+        setUser(session.user as User);
       } else {
         setUser(null);
       }
@@ -124,7 +124,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         await authClient.signIn.social({
           provider: "google",
-          callbackURL: "/onboarding/profile",
         });
         await fetchUser();
       }
@@ -143,31 +142,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         await authClient.signIn.social({
           provider: "apple",
-          callbackURL: "/onboarding/profile",
         });
         await fetchUser();
       }
     } catch (error) {
       console.error("Apple sign in failed:", error);
-      throw error;
-    }
-  };
-
-  const signInWithGitHub = async () => {
-    try {
-      if (Platform.OS === "web") {
-        const token = await openOAuthPopup("github");
-        storeWebBearerToken(token);
-        await fetchUser();
-      } else {
-        await authClient.signIn.social({
-          provider: "github",
-          callbackURL: "/onboarding/profile",
-        });
-        await fetchUser();
-      }
-    } catch (error) {
-      console.error("GitHub sign in failed:", error);
       throw error;
     }
   };
@@ -191,7 +170,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signUpWithEmail,
         signInWithGoogle,
         signInWithApple,
-        signInWithGitHub,
         signOut,
         fetchUser,
       }}

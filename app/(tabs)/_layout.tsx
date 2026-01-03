@@ -1,43 +1,46 @@
 
+import { Tabs } from 'expo-router';
 import React from 'react';
-import { Stack } from 'expo-router';
-import FloatingTabBar, { TabBarItem } from '@/components/FloatingTabBar';
+import { Platform } from 'react-native';
+import { IconSymbol } from '@/components/IconSymbol';
+import { colors } from '@/styles/commonStyles';
 
 export default function TabLayout() {
-  const tabs: TabBarItem[] = [
-    {
-      name: 'discover',
-      route: '/(tabs)/discover',
-      icon: 'heart',
-      label: 'Discover',
-    },
-    {
-      name: 'conversations',
-      route: '/(tabs)/conversations',
-      icon: 'message',
-      label: 'Chats',
-    },
-    {
-      name: 'profile',
-      route: '/(tabs)/profile',
-      icon: 'person',
-      label: 'Profile',
-    },
-  ];
-
   return (
-    <>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          animation: 'none',
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: colors.primary,
+        headerShown: false,
+        tabBarStyle: Platform.select({
+          ios: {
+            position: 'absolute',
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          },
+          default: {},
+        }),
+      }}
+    >
+      <Tabs.Screen
+        name="discover"
+        options={{
+          title: 'Discover',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="heart.fill" color={color} />,
         }}
-      >
-        <Stack.Screen name="discover" />
-        <Stack.Screen name="conversations" />
-        <Stack.Screen name="profile" />
-      </Stack>
-      <FloatingTabBar tabs={tabs} />
-    </>
+      />
+      <Tabs.Screen
+        name="conversations"
+        options={{
+          title: 'Chats',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="message.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+        }}
+      />
+    </Tabs>
   );
 }
