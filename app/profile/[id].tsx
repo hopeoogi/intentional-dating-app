@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -35,11 +35,7 @@ export default function ProfileDetailScreen() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadProfile();
-  }, [id]);
-
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     try {
       setLoading(true);
       console.log('[ProfileDetail] Fetching profile for user:', id);
@@ -66,11 +62,15 @@ export default function ProfileDetailScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
-  const handleStartConversation = () => {
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
+
+  const handleStartConversation = useCallback(() => {
     router.push(`/conversation/${id}`);
-  };
+  }, [router, id]);
 
   if (loading || !profile) {
     return (

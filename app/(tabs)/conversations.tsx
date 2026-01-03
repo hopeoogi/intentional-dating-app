@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -30,11 +30,22 @@ export default function ConversationsScreen() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadConversations();
+  const formatTimestamp = useCallback((timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
   }, []);
 
-  const loadConversations = async () => {
+  const loadConversations = useCallback(async () => {
     try {
       setLoading(true);
       console.log('[Conversations] Fetching conversations from API');
@@ -60,28 +71,17 @@ export default function ConversationsScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [formatTimestamp]);
 
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
 
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
-  };
-
-  const handleConversationPress = (conversationId: string) => {
+  const handleConversationPress = useCallback((conversationId: string) => {
     router.push(`/conversation/${conversationId}`);
-  };
+  }, [router]);
 
-  const renderConversation = ({ item }: { item: Conversation }) => (
+  const renderConversation = useCallback(({ item }: { item: Conversation }) => (
     <TouchableOpacity
       style={styles.conversationCard}
       onPress={() => handleConversationPress(item.id)}
@@ -101,7 +101,7 @@ export default function ConversationsScreen() {
       </View>
       {item.unread && <View style={styles.unreadDot} />}
     </TouchableOpacity>
-  );
+  ), [handleConversationPress]);
 
   if (loading) {
     return (

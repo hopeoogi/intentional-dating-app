@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -34,11 +34,7 @@ export default function ConversationScreen() {
   const [loading, setLoading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
-  useEffect(() => {
-    loadMessages();
-  }, [id]);
-
-  const loadMessages = async () => {
+  const loadMessages = useCallback(async () => {
     try {
       console.log('[Conversation] Fetching messages for conversation:', id);
 
@@ -62,9 +58,13 @@ export default function ConversationScreen() {
     } catch (error) {
       console.error('[Conversation] Failed to load messages:', error);
     }
-  };
+  }, [id]);
 
-  const handleSend = async () => {
+  useEffect(() => {
+    loadMessages();
+  }, [loadMessages]);
+
+  const handleSend = useCallback(async () => {
     if (!inputText.trim()) {
       return;
     }
@@ -111,9 +111,9 @@ export default function ConversationScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [inputText, isFirstMessage, id, messages]);
 
-  const handleEndConversation = () => {
+  const handleEndConversation = useCallback(() => {
     Alert.alert(
       'End Conversation',
       'Are you sure you want to end this conversation? You won&apos;t see this person again.',
@@ -136,9 +136,9 @@ export default function ConversationScreen() {
         },
       ]
     );
-  };
+  }, [id, router]);
 
-  const handleSnooze = () => {
+  const handleSnooze = useCallback(() => {
     Alert.alert(
       'Snooze Conversation',
       'How long would you like to snooze this conversation?',
@@ -174,9 +174,9 @@ export default function ConversationScreen() {
         },
       ]
     );
-  };
+  }, [id, router]);
 
-  const renderMessage = ({ item }: { item: Message }) => {
+  const renderMessage = useCallback(({ item }: { item: Message }) => {
     const isMe = item.senderId === 'me';
     return (
       <View
@@ -218,7 +218,7 @@ export default function ConversationScreen() {
         </View>
       </View>
     );
-  };
+  }, []);
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
