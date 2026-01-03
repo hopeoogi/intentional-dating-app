@@ -22,79 +22,105 @@ async function requireAdmin(app: App, request: any, reply: any) {
 }
 
 export function register(app: App, fastify: FastifyInstance) {
-  // Get pending verification reviews
+  // Get pending verification reviews (both paths for compatibility)
+  const getPendingHandler = async (request: any, reply: any) => {
+    const admin = await requireAdmin(app, request, reply);
+    if (!admin) return;
+
+    const pendingProfiles = await app.db.query.userProfiles.findMany({
+      where: eq(schema.userProfiles.verificationStatus, "pending"),
+      with: { media: true },
+    });
+
+    return {
+      pendingReviews: pendingProfiles.length,
+      profiles: pendingProfiles,
+    };
+  };
+
   fastify.get(
     "/api/admin/verification/pending",
     { schema: { description: "Get pending user profiles for verification", tags: ["admin"] } },
-    async (request, reply) => {
-      const admin = await requireAdmin(app, request, reply);
-      if (!admin) return;
-
-      const pendingProfiles = await app.db.query.userProfiles.findMany({
-        where: eq(schema.userProfiles.verificationStatus, "pending"),
-        with: { media: true },
-      });
-
-      return {
-        pendingReviews: pendingProfiles.length,
-        profiles: pendingProfiles,
-      };
-    }
+    getPendingHandler
   );
 
-  // Approve user profile
+  fastify.get(
+    "/api/admin/applications",
+    { schema: { description: "Get pending verification applications", tags: ["admin"] } },
+    getPendingHandler
+  );
+
+  // Approve user profile (both paths for compatibility)
+  const approveHandler = async (request: any, reply: any) => {
+    const admin = await requireAdmin(app, request, reply);
+    if (!admin) return;
+
+    const { userId, id } = request.params as { userId?: string; id?: string };
+    const targetId = userId || id;
+
+    const updated = await app.db
+      .update(schema.userProfiles)
+      .set({
+        verificationStatus: "approved",
+        badges: ["verified"],
+      })
+      .where(eq(schema.userProfiles.id, targetId))
+      .returning();
+
+    if (updated.length === 0) {
+      return reply.status(404).send({ error: "User not found" });
+    }
+
+    return { profile: updated[0], message: "Profile approved" };
+  };
+
   fastify.post(
     "/api/admin/verification/approve/:userId",
     { schema: { description: "Approve user profile", tags: ["admin"] } },
-    async (request, reply) => {
-      const admin = await requireAdmin(app, request, reply);
-      if (!admin) return;
-
-      const { userId } = request.params as { userId: string };
-
-      const updated = await app.db
-        .update(schema.userProfiles)
-        .set({
-          verificationStatus: "approved",
-          badges: ["verified"],
-        })
-        .where(eq(schema.userProfiles.id, userId))
-        .returning();
-
-      if (updated.length === 0) {
-        return reply.status(404).send({ error: "User not found" });
-      }
-
-      return { profile: updated[0], message: "Profile approved" };
-    }
+    approveHandler
   );
 
-  // Reject user profile
+  fastify.post(
+    "/api/admin/applications/:id/approve",
+    { schema: { description: "Approve verification application", tags: ["admin"] } },
+    approveHandler
+  );
+
+  // Reject user profile (both paths for compatibility)
+  const rejectHandler = async (request: any, reply: any) => {
+    const admin = await requireAdmin(app, request, reply);
+    if (!admin) return;
+
+    const { userId, id } = request.params as { userId?: string; id?: string };
+    const targetId = userId || id;
+    const body = request.body as { reason: string };
+
+    const updated = await app.db
+      .update(schema.userProfiles)
+      .set({
+        verificationStatus: "rejected",
+        verificationRejectionReason: body.reason,
+      })
+      .where(eq(schema.userProfiles.id, targetId))
+      .returning();
+
+    if (updated.length === 0) {
+      return reply.status(404).send({ error: "User not found" });
+    }
+
+    return { profile: updated[0], message: "Profile rejected" };
+  };
+
   fastify.post(
     "/api/admin/verification/reject/:userId",
     { schema: { description: "Reject user profile", tags: ["admin"] } },
-    async (request, reply) => {
-      const admin = await requireAdmin(app, request, reply);
-      if (!admin) return;
+    rejectHandler
+  );
 
-      const { userId } = request.params as { userId: string };
-      const body = request.body as { reason: string };
-
-      const updated = await app.db
-        .update(schema.userProfiles)
-        .set({
-          verificationStatus: "rejected",
-          verificationRejectionReason: body.reason,
-        })
-        .where(eq(schema.userProfiles.id, userId))
-        .returning();
-
-      if (updated.length === 0) {
-        return reply.status(404).send({ error: "User not found" });
-      }
-
-      return { profile: updated[0], message: "Profile rejected" };
-    }
+  fastify.post(
+    "/api/admin/applications/:id/reject",
+    { schema: { description: "Reject verification application", tags: ["admin"] } },
+    rejectHandler
   );
 
   // Get all users with pagination
