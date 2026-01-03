@@ -1,0 +1,1 @@
+ALTER TABLE "user_profiles" ADD COLUMN "onboarding_status" varchar(50) DEFAULT 'account_created';
