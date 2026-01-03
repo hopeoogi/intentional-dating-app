@@ -21,7 +21,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 SplashScreen.preventAutoHideAsync();
 
 export const unstable_settings = {
-  initialRouteName: "welcome",
+  initialRouteName: "index",
 };
 
 export default function RootLayout() {
@@ -88,9 +88,13 @@ export default function RootLayout() {
           <WidgetProvider>
             <GestureHandlerRootView>
               <Stack>
-                {/* Welcome and Auth Screens */}
-                <Stack.Screen name="welcome" options={{ headerShown: false }} />
+                {/* Welcome Screen (index.tsx) */}
+                <Stack.Screen name="index" options={{ headerShown: false }} />
+                
+                {/* Auth Screens */}
                 <Stack.Screen name="signin" options={{ headerShown: false }} />
+                <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
+                <Stack.Screen name="auth-popup" options={{ headerShown: false }} />
                 
                 {/* Onboarding Flow */}
                 <Stack.Screen 
@@ -122,9 +126,34 @@ export default function RootLayout() {
                   }} 
                 />
                 <Stack.Screen 
+                  name="onboarding/pending" 
+                  options={{ 
+                    title: "Pending Approval",
+                    headerBackTitle: "Back"
+                  }} 
+                />
+                <Stack.Screen 
                   name="onboarding/subscription" 
                   options={{ 
                     title: "Choose Your Plan",
+                    headerBackTitle: "Back"
+                  }} 
+                />
+
+                {/* Profile Detail */}
+                <Stack.Screen 
+                  name="profile/[id]" 
+                  options={{ 
+                    title: "Profile",
+                    headerBackTitle: "Back"
+                  }} 
+                />
+
+                {/* Conversation Detail */}
+                <Stack.Screen 
+                  name="conversation/[id]" 
+                  options={{ 
+                    title: "Conversation",
                     headerBackTitle: "Back"
                   }} 
                 />
