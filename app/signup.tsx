@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/styles/commonStyles';
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
+import { useAuth } from '@/contexts/AuthContext';
 import { IconSymbol } from '@/components/IconSymbol';
 import {
   View,
@@ -16,7 +17,6 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { authenticatedPost } from '@/utils/api';
 
 export default function SignUpScreen() {
   const [email, setEmail] = useState('');
@@ -25,6 +25,7 @@ export default function SignUpScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { signUp } = useAuth();
 
   const handleSignUp = async () => {
     if (!email || !phone || !password || !confirmPassword) {
@@ -44,16 +45,15 @@ export default function SignUpScreen() {
 
     try {
       setLoading(true);
-      await authenticatedPost('/api/auth/signup', {
-        email,
-        phone,
-        password,
-      });
+      console.log('[SignUp] Attempting sign up');
+      await signUp(email, phone, password);
+      console.log('[SignUp] Sign up successful');
       
       Alert.alert('Success', 'Account created! Please complete your profile.', [
         { text: 'Continue', onPress: () => router.push('/onboarding/profile') }
       ]);
     } catch (error: any) {
+      console.error('[SignUp] Sign up error:', error);
       Alert.alert('Sign Up Failed', error.message || 'Please try again');
     } finally {
       setLoading(false);

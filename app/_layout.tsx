@@ -21,7 +21,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 SplashScreen.preventAutoHideAsync();
 
 export const unstable_settings = {
-  initialRouteName: "index",
+  initialRouteName: "(tabs)",
 };
 
 export default function RootLayout() {
@@ -57,11 +57,11 @@ export default function RootLayout() {
     ...DefaultTheme,
     dark: false,
     colors: {
-      primary: "rgb(255, 107, 157)",
-      background: "rgb(255, 255, 255)",
-      card: "rgb(248, 248, 248)",
-      text: "rgb(51, 51, 51)",
-      border: "rgb(224, 224, 224)",
+      primary: "rgb(0, 122, 255)",
+      background: "rgb(242, 242, 247)",
+      card: "rgb(255, 255, 255)",
+      text: "rgb(0, 0, 0)",
+      border: "rgb(216, 216, 220)",
       notification: "rgb(255, 59, 48)",
     },
   };
@@ -69,9 +69,9 @@ export default function RootLayout() {
   const CustomDarkTheme: Theme = {
     ...DarkTheme,
     colors: {
-      primary: "rgb(255, 107, 157)",
-      background: "rgb(26, 26, 26)",
-      card: "rgb(44, 44, 44)",
+      primary: "rgb(10, 132, 255)",
+      background: "rgb(1, 1, 1)",
+      card: "rgb(28, 28, 30)",
       text: "rgb(255, 255, 255)",
       border: "rgb(44, 44, 46)",
       notification: "rgb(255, 69, 58)",
@@ -86,43 +86,61 @@ export default function RootLayout() {
       >
         <AuthProvider>
           <WidgetProvider>
-            <GestureHandlerRootView style={{ flex: 1 }}>
-              <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="index" />
-                <Stack.Screen name="signin" />
-                <Stack.Screen name="signup" />
-                <Stack.Screen name="(tabs)" />
-                <Stack.Screen name="conversation/[id]" />
-                <Stack.Screen name="conversation/new" />
-                <Stack.Screen name="profile/[id]" />
-                <Stack.Screen name="onboarding/profile" />
-                <Stack.Screen name="onboarding/media" />
-                <Stack.Screen name="onboarding/verification" />
-                <Stack.Screen name="onboarding/subscription" />
+            <GestureHandlerRootView>
+              <Stack>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="signin" options={{ headerShown: false }} />
+                <Stack.Screen name="signup" options={{ headerShown: false }} />
+                <Stack.Screen
+                  name="onboarding/profile"
+                  options={{ title: "Complete Profile" }}
+                />
+                <Stack.Screen
+                  name="onboarding/media"
+                  options={{ title: "Add Photos & Video" }}
+                />
+                <Stack.Screen
+                  name="onboarding/verification"
+                  options={{ title: "Verification" }}
+                />
+                <Stack.Screen
+                  name="conversation/[id]"
+                  options={{ title: "Conversation" }}
+                />
+                <Stack.Screen
+                  name="conversation/new"
+                  options={{ title: "New Conversation" }}
+                />
+                <Stack.Screen
+                  name="profile/[id]"
+                  options={{ title: "Profile" }}
+                />
                 <Stack.Screen
                   name="modal"
                   options={{
                     presentation: "modal",
-                    headerShown: true,
-                    title: "Modal",
+                    title: "Standard Modal",
                   }}
                 />
                 <Stack.Screen
                   name="formsheet"
                   options={{
                     presentation: "formSheet",
-                    headerShown: true,
-                    title: "Form Sheet",
+                    title: "Form Sheet Modal",
+                    sheetGrabberVisible: true,
+                    sheetAllowedDetents: [0.5, 0.8, 1.0],
+                    sheetCornerRadius: 20,
                   }}
                 />
                 <Stack.Screen
                   name="transparent-modal"
                   options={{
                     presentation: "transparentModal",
+                    headerShown: false,
                   }}
                 />
               </Stack>
-              <SystemBars style="auto" />
+              <SystemBars style={"auto"} />
             </GestureHandlerRootView>
           </WidgetProvider>
         </AuthProvider>

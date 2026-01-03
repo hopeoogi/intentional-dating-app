@@ -1,13 +1,21 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import * as SecureStore from 'expo-secure-store';
-import { BACKEND_URL } from '@/utils/api';
+import { authClient } from '@/lib/auth';
+
+interface User {
+  id: string;
+  email: string;
+  name?: string;
+  phone?: string;
+  status?: string;
+}
 
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
-  user: any | null;
+  user: User | null;
   signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, phone: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshAuth: () => Promise<void>;
 }
@@ -17,7 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -25,58 +33,67 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      const token = await SecureStore.getItemAsync('authToken');
-      if (token) {
-        setIsAuthenticated(true);
-        await loadUser();
+      console.log('[AuthContext] Checking authentication status');
+      const authenticated = await authClient.isAuthenticated();
+      
+      if (authenticated) {
+        console.log('[AuthContext] User is authenticated, loading user data');
+        const userData = await authClient.getCurrentUser();
+        if (userData) {
+          setUser(userData);
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+        }
+      } else {
+        console.log('[AuthContext] User is not authenticated');
+        setIsAuthenticated(false);
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+      console.error('[AuthContext] Auth check failed:', error);
+      setIsAuthenticated(false);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const loadUser = async () => {
+  const signIn = async (email: string, password: string) => {
     try {
-      const token = await SecureStore.getItemAsync('authToken');
-      const response = await fetch(`${BACKEND_URL}/api/auth/me`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-      }
+      console.log('[AuthContext] Signing in');
+      const data = await authClient.signIn(email, password);
+      setUser(data.user);
+      setIsAuthenticated(true);
+      console.log('[AuthContext] Sign in successful');
     } catch (error) {
-      console.error('Failed to load user:', error);
+      console.error('[AuthContext] Sign in failed:', error);
+      throw error;
     }
   };
 
-  const signIn = async (email: string, password: string) => {
-    const response = await fetch(`${BACKEND_URL}/api/auth/signin`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Invalid credentials');
+  const signUp = async (email: string, phone: string, password: string) => {
+    try {
+      console.log('[AuthContext] Signing up');
+      const data = await authClient.signUp(email, phone, password);
+      setUser(data.user);
+      setIsAuthenticated(true);
+      console.log('[AuthContext] Sign up successful');
+    } catch (error) {
+      console.error('[AuthContext] Sign up failed:', error);
+      throw error;
     }
-
-    const data = await response.json();
-    await SecureStore.setItemAsync('authToken', data.token);
-    setIsAuthenticated(true);
-    await loadUser();
   };
 
   const signOut = async () => {
-    await SecureStore.deleteItemAsync('authToken');
-    setIsAuthenticated(false);
-    setUser(null);
+    try {
+      console.log('[AuthContext] Signing out');
+      await authClient.signOut();
+      setIsAuthenticated(false);
+      setUser(null);
+      console.log('[AuthContext] Sign out successful');
+    } catch (error) {
+      console.error('[AuthContext] Sign out failed:', error);
+      throw error;
+    }
   };
 
   const refreshAuth = async () => {
@@ -90,6 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         user,
         signIn,
+        signUp,
         signOut,
         refreshAuth,
       }}

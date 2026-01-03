@@ -1,66 +1,95 @@
 
-import * as SecureStore from 'expo-secure-store';
+import Constants from "expo-constants";
+import { authClient } from "@/lib/auth";
 
-export const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:3000';
+export const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl || "";
 
-export async function getBearerToken(): Promise<string | null> {
+export const isBackendConfigured = (): boolean => {
+  return !!BACKEND_URL && BACKEND_URL.length > 0;
+};
+
+export const getBearerToken = async (): Promise<string | null> => {
+  return await authClient.getToken();
+};
+
+export const apiCall = async <T = any>(
+  endpoint: string,
+  options?: RequestInit
+): Promise<T> => {
+  if (!isBackendConfigured()) {
+    throw new Error("Backend URL not configured. Please rebuild the app.");
+  }
+
+  const url = `${BACKEND_URL}${endpoint}`;
+  console.log("[API] Calling:", url, options?.method || "GET");
+
   try {
-    return await SecureStore.getItemAsync('authToken');
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+      },
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("[API] Error response:", response.status, text);
+      throw new Error(`API error: ${response.status} - ${text}`);
+    }
+
+    const data = await response.json();
+    console.log("[API] Success:", data);
+    return data;
   } catch (error) {
-    console.error('Failed to get auth token:', error);
-    return null;
+    console.error("[API] Request failed:", error);
+    throw error;
   }
-}
+};
 
-export async function authenticatedGet(endpoint: string) {
+export const authenticatedApiCall = async <T = any>(
+  endpoint: string,
+  options?: RequestInit
+): Promise<T> => {
   const token = await getBearerToken();
-  const response = await fetch(`${BACKEND_URL}${endpoint}`, {
-    method: 'GET',
+
+  if (!token) {
+    throw new Error("Authentication token not found. Please sign in.");
+  }
+
+  return apiCall<T>(endpoint, {
+    ...options,
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
+      ...options?.headers,
+      Authorization: `Bearer ${token}`,
     },
   });
+};
 
-  if (!response.ok) {
-    throw new Error(`API request failed: ${response.statusText}`);
-  }
+export const authenticatedGet = async <T = any>(endpoint: string): Promise<T> => {
+  return authenticatedApiCall<T>(endpoint, { method: "GET" });
+};
 
-  return response.json();
-}
-
-export async function authenticatedPost(endpoint: string, data: any) {
-  const token = await getBearerToken();
-  const response = await fetch(`${BACKEND_URL}${endpoint}`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
+export const authenticatedPost = async <T = any>(
+  endpoint: string,
+  data: any
+): Promise<T> => {
+  return authenticatedApiCall<T>(endpoint, {
+    method: "POST",
     body: JSON.stringify(data),
   });
+};
 
-  if (!response.ok) {
-    throw new Error(`API request failed: ${response.statusText}`);
-  }
-
-  return response.json();
-}
-
-export async function authenticatedPut(endpoint: string, data: any) {
-  const token = await getBearerToken();
-  const response = await fetch(`${BACKEND_URL}${endpoint}`, {
-    method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
+export const authenticatedPut = async <T = any>(
+  endpoint: string,
+  data: any
+): Promise<T> => {
+  return authenticatedApiCall<T>(endpoint, {
+    method: "PUT",
     body: JSON.stringify(data),
   });
+};
 
-  if (!response.ok) {
-    throw new Error(`API request failed: ${response.statusText}`);
-  }
-
-  return response.json();
-}
+export const authenticatedDelete = async <T = any>(endpoint: string): Promise<T> => {
+  return authenticatedApiCall<T>(endpoint, { method: "DELETE" });
+};

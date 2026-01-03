@@ -33,9 +33,12 @@ export default function SignInScreen() {
 
     try {
       setLoading(true);
+      console.log('[SignIn] Attempting sign in');
       await signIn(email, password);
+      console.log('[SignIn] Sign in successful, navigating to discover');
       router.replace('/(tabs)/discover');
     } catch (error: any) {
+      console.error('[SignIn] Sign in error:', error);
       Alert.alert('Sign In Failed', error.message || 'Please check your credentials');
     } finally {
       setLoading(false);
