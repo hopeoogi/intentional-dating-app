@@ -1,4 +1,3 @@
-
 {
   "expo": {
     "name": "Intentional",
@@ -55,7 +54,8 @@
       "router": {},
       "eas": {
         "projectId": "your-project-id"
-      }
+      },
+      "backendUrl": "https://6ytjugugmhrw5w5dguny2u79uz83r3tz.app.specular.dev"
     }
   }
 }
