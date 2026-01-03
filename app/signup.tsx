@@ -3,7 +3,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/styles/commonStyles';
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
-import { useAuth } from '@/contexts/AuthContext';
 import { IconSymbol } from '@/components/IconSymbol';
 import {
   View,
@@ -17,33 +16,48 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { authenticatedPost } from '@/utils/api';
 
-export default function SignInScreen() {
+export default function SignUpScreen() {
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { signIn } = useAuth();
 
-  const handleSignIn = async () => {
-    if (!email || !password) {
+  const handleSignUp = async () => {
+    if (!email || !phone || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    if (password.length < 8) {
+      Alert.alert('Error', 'Password must be at least 8 characters');
       return;
     }
 
     try {
       setLoading(true);
-      await signIn(email, password);
-      router.replace('/(tabs)/discover');
+      await authenticatedPost('/api/auth/signup', {
+        email,
+        phone,
+        password,
+      });
+      
+      Alert.alert('Success', 'Account created! Please complete your profile.', [
+        { text: 'Continue', onPress: () => router.push('/onboarding/profile') }
+      ]);
     } catch (error: any) {
-      Alert.alert('Sign In Failed', error.message || 'Please check your credentials');
+      Alert.alert('Sign Up Failed', error.message || 'Please try again');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSocialAuth = async (provider: 'google' | 'apple') => {
-    Alert.alert('Coming Soon', `${provider} authentication will be available soon`);
   };
 
   return (
@@ -54,8 +68,16 @@ export default function SignInScreen() {
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
-            <Text style={styles.title}>Welcome Back</Text>
-            <Text style={styles.subtitle}>Sign in to continue your intentional dating journey</Text>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <IconSymbol
+                ios_icon_name="chevron.left"
+                android_material_icon_name="arrow-back"
+                size={24}
+                color={colors.text}
+              />
+            </TouchableOpacity>
+            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.subtitle}>Join the intentional dating community</Text>
           </View>
 
           <View style={styles.form}>
@@ -80,6 +102,23 @@ export default function SignInScreen() {
 
             <View style={styles.inputContainer}>
               <IconSymbol
+                ios_icon_name="phone.fill"
+                android_material_icon_name="phone"
+                size={20}
+                color={colors.textSecondary}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Phone Number"
+                placeholderTextColor={colors.textSecondary}
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <IconSymbol
                 ios_icon_name="lock.fill"
                 android_material_icon_name="lock"
                 size={20}
@@ -87,7 +126,7 @@ export default function SignInScreen() {
               />
               <TextInput
                 style={styles.input}
-                placeholder="Password"
+                placeholder="Password (min 8 characters)"
                 placeholderTextColor={colors.textSecondary}
                 value={password}
                 onChangeText={setPassword}
@@ -96,58 +135,46 @@ export default function SignInScreen() {
               />
             </View>
 
+            <View style={styles.inputContainer}>
+              <IconSymbol
+                ios_icon_name="lock.fill"
+                android_material_icon_name="lock"
+                size={20}
+                color={colors.textSecondary}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Confirm Password"
+                placeholderTextColor={colors.textSecondary}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry
+                autoCapitalize="none"
+              />
+            </View>
+
             <TouchableOpacity
-              style={styles.signInButton}
-              onPress={handleSignIn}
+              style={styles.signUpButton}
+              onPress={handleSignUp}
               disabled={loading}
             >
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.signInButtonText}>Sign In</Text>
+                <Text style={styles.signUpButtonText}>Create Account</Text>
               )}
             </TouchableOpacity>
 
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or continue with</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <View style={styles.socialButtons}>
-              <TouchableOpacity
-                style={styles.socialButton}
-                onPress={() => handleSocialAuth('google')}
-              >
-                <IconSymbol
-                  ios_icon_name="g.circle.fill"
-                  android_material_icon_name="login"
-                  size={24}
-                  color={colors.text}
-                />
-                <Text style={styles.socialButtonText}>Google</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.socialButton}
-                onPress={() => handleSocialAuth('apple')}
-              >
-                <IconSymbol
-                  ios_icon_name="apple.logo"
-                  android_material_icon_name="login"
-                  size={24}
-                  color={colors.text}
-                />
-                <Text style={styles.socialButtonText}>Apple</Text>
-              </TouchableOpacity>
-            </View>
+            <Text style={styles.termsText}>
+              By signing up, you agree to our Terms of Service and Privacy Policy
+            </Text>
 
             <TouchableOpacity
-              style={styles.signUpLink}
-              onPress={() => router.push('/signup')}
+              style={styles.signInLink}
+              onPress={() => router.push('/signin')}
             >
-              <Text style={styles.signUpText}>
-                Don&apos;t have an account? <Text style={styles.signUpTextBold}>Sign Up</Text>
+              <Text style={styles.signInText}>
+                Already have an account? <Text style={styles.signInTextBold}>Sign In</Text>
               </Text>
             </TouchableOpacity>
           </View>
@@ -170,8 +197,11 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   header: {
-    marginTop: 40,
+    marginTop: 20,
     marginBottom: 40,
+  },
+  backButton: {
+    marginBottom: 20,
   },
   title: {
     fontSize: 32,
@@ -203,63 +233,34 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
   },
-  signInButton: {
+  signUpButton: {
     backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 8,
   },
-  signInButtonText: {
+  signUpButtonText: {
     color: '#fff',
     fontSize: 17,
     fontWeight: '600',
   },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 32,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.border,
-  },
-  dividerText: {
-    marginHorizontal: 16,
+  termsText: {
+    fontSize: 13,
     color: colors.textSecondary,
-    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 16,
+    lineHeight: 18,
   },
-  socialButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  socialButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: 8,
-  },
-  socialButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  signUpLink: {
+  signInLink: {
     marginTop: 32,
     alignItems: 'center',
   },
-  signUpText: {
+  signInText: {
     fontSize: 15,
     color: colors.textSecondary,
   },
-  signUpTextBold: {
+  signInTextBold: {
     color: colors.primary,
     fontWeight: '600',
   },

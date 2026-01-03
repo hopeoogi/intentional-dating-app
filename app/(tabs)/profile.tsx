@@ -94,33 +94,83 @@ export default function ProfileScreen() {
 
         <View style={styles.section}>
           <TouchableOpacity style={styles.menuItem}>
-            <IconSymbol name="person.fill" size={24} color={colors.primary} />
+            <IconSymbol
+              ios_icon_name="person.fill"
+              android_material_icon_name="person"
+              size={24}
+              color={colors.primary}
+            />
             <Text style={styles.menuItemText}>Edit Profile</Text>
-            <IconSymbol name="chevron.right" size={20} color={colors.textLight} />
+            <IconSymbol
+              ios_icon_name="chevron.right"
+              android_material_icon_name="chevron-right"
+              size={20}
+              color={colors.textLight}
+            />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
-            <IconSymbol name="photo.fill" size={24} color={colors.primary} />
+            <IconSymbol
+              ios_icon_name="photo.fill"
+              android_material_icon_name="photo"
+              size={24}
+              color={colors.primary}
+            />
             <Text style={styles.menuItemText}>Manage Photos</Text>
-            <IconSymbol name="chevron.right" size={20} color={colors.textLight} />
+            <IconSymbol
+              ios_icon_name="chevron.right"
+              android_material_icon_name="chevron-right"
+              size={20}
+              color={colors.textLight}
+            />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
-            <IconSymbol name="gearshape.fill" size={24} color={colors.primary} />
+            <IconSymbol
+              ios_icon_name="gearshape.fill"
+              android_material_icon_name="settings"
+              size={24}
+              color={colors.primary}
+            />
             <Text style={styles.menuItemText}>Settings</Text>
-            <IconSymbol name="chevron.right" size={20} color={colors.textLight} />
+            <IconSymbol
+              ios_icon_name="chevron.right"
+              android_material_icon_name="chevron-right"
+              size={20}
+              color={colors.textLight}
+            />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
-            <IconSymbol name="shield.fill" size={24} color={colors.primary} />
+            <IconSymbol
+              ios_icon_name="shield.fill"
+              android_material_icon_name="security"
+              size={24}
+              color={colors.primary}
+            />
             <Text style={styles.menuItemText}>Privacy & Safety</Text>
-            <IconSymbol name="chevron.right" size={20} color={colors.textLight} />
+            <IconSymbol
+              ios_icon_name="chevron.right"
+              android_material_icon_name="chevron-right"
+              size={20}
+              color={colors.textLight}
+            />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
-            <IconSymbol name="questionmark.circle.fill" size={24} color={colors.primary} />
+            <IconSymbol
+              ios_icon_name="questionmark.circle.fill"
+              android_material_icon_name="help"
+              size={24}
+              color={colors.primary}
+            />
             <Text style={styles.menuItemText}>Help & Support</Text>
-            <IconSymbol name="chevron.right" size={20} color={colors.textLight} />
+            <IconSymbol
+              ios_icon_name="chevron.right"
+              android_material_icon_name="chevron-right"
+              size={20}
+              color={colors.textLight}
+            />
           </TouchableOpacity>
         </View>
 
@@ -138,7 +188,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -172,7 +222,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: colors.card,
     borderRadius: 12,
     marginBottom: 12,
   },

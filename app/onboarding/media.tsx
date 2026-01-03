@@ -106,11 +106,21 @@ export default function MediaScreen() {
                 style={styles.removeButton}
                 onPress={() => removeMedia(index)}
               >
-                <IconSymbol name="xmark.circle.fill" size={24} color="#FF3B30" />
+                <IconSymbol
+                  ios_icon_name="xmark.circle.fill"
+                  android_material_icon_name="cancel"
+                  size={24}
+                  color="#FF3B30"
+                />
               </TouchableOpacity>
               {media.type === 'video' && (
                 <View style={styles.videoBadge}>
-                  <IconSymbol name="play.circle.fill" size={32} color="#FFFFFF" />
+                  <IconSymbol
+                    ios_icon_name="play.circle.fill"
+                    android_material_icon_name="play-circle-filled"
+                    size={32}
+                    color="#FFFFFF"
+                  />
                 </View>
               )}
             </View>
@@ -118,7 +128,12 @@ export default function MediaScreen() {
 
           {photos.length < 6 && (
             <TouchableOpacity style={styles.addButton} onPress={pickMedia}>
-              <IconSymbol name="plus.circle.fill" size={48} color={colors.primary} />
+              <IconSymbol
+                ios_icon_name="plus.circle.fill"
+                android_material_icon_name="add-circle"
+                size={48}
+                color={colors.primary}
+              />
               <Text style={styles.addButtonText}>Add Photo/Video</Text>
             </TouchableOpacity>
           )}

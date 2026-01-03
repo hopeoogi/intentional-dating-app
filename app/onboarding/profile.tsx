@@ -165,7 +165,12 @@ export default function ProfileScreen() {
                 onPress={requestLocationPermission}
                 disabled={loading}
               >
-                <IconSymbol name="location.fill" size={24} color={colors.primary} />
+                <IconSymbol
+                  ios_icon_name="location.fill"
+                  android_material_icon_name="location-on"
+                  size={24}
+                  color={colors.primary}
+                />
               </TouchableOpacity>
             </View>
 

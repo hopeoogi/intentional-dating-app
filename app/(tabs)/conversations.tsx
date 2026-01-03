@@ -1,20 +1,19 @@
 
 import React, { useState, useEffect } from 'react';
+import { colors, commonStyles } from '@/styles/commonStyles';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { authenticatedGet } from '@/utils/api';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Image,
-  ActivityIndicator,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { authenticatedGet } from '@/utils/api';
 import { IconSymbol } from '@/components/IconSymbol';
-import { colors, commonStyles } from '@/styles/commonStyles';
+import { useRouter } from 'expo-router';
 
 interface Conversation {
   id: string;
@@ -25,7 +24,7 @@ interface Conversation {
   };
   lastMessage: {
     text: string;
-    timestamp: string;
+    timestamp: Date;
     isRead: boolean;
   };
   status: 'active' | 'snoozed' | 'ended';
@@ -43,64 +42,77 @@ export default function ConversationsScreen() {
   const loadConversations = async () => {
     try {
       setLoading(true);
-      const data = await authenticatedGet('/api/conversations');
-      setConversations(data.conversations || []);
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to load conversations');
+      const response = await authenticatedGet('/api/conversations');
+      setConversations(response.conversations || []);
+    } catch (error) {
+      console.error('Failed to load conversations:', error);
+      Alert.alert('Error', 'Failed to load conversations');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleConversationPress = (conversationId: string) => {
+    router.push(`/conversation/${conversationId}`);
+  };
+
   const renderConversation = ({ item }: { item: Conversation }) => (
     <TouchableOpacity
       style={styles.conversationItem}
-      onPress={() => router.push(`/conversation/${item.id}`)}
+      onPress={() => handleConversationPress(item.id)}
     >
-      <Image
-        source={{ uri: item.otherUser.photo || 'https://via.placeholder.com/60' }}
-        style={styles.avatar}
-      />
+      <View style={styles.avatar}>
+        <Text style={styles.avatarText}>{item.otherUser.name[0]}</Text>
+      </View>
       <View style={styles.conversationContent}>
         <View style={styles.conversationHeader}>
-          <Text style={styles.conversationName}>{item.otherUser.name}</Text>
-          <Text style={styles.conversationTime}>
+          <Text style={styles.userName}>{item.otherUser.name}</Text>
+          <Text style={styles.timestamp}>
             {new Date(item.lastMessage.timestamp).toLocaleDateString()}
           </Text>
         </View>
         <Text
           style={[
-            styles.conversationMessage,
-            !item.lastMessage.isRead && styles.conversationMessageUnread,
+            styles.lastMessage,
+            !item.lastMessage.isRead && styles.unreadMessage,
           ]}
           numberOfLines={1}
         >
           {item.lastMessage.text}
         </Text>
+        {item.status === 'snoozed' && (
+          <View style={styles.statusBadge}>
+            <IconSymbol name="moon.fill" size={12} color={colors.textSecondary} />
+            <Text style={styles.statusText}>Snoozed</Text>
+          </View>
+        )}
       </View>
-      {!item.lastMessage.isRead && <View style={styles.unreadBadge} />}
+      {!item.lastMessage.isRead && <View style={styles.unreadDot} />}
     </TouchableOpacity>
   );
 
   if (loading) {
     return (
-      <View style={commonStyles.centered}>
+      <SafeAreaView style={[commonStyles.container, styles.centered]}>
         <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={commonStyles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Conversations</Text>
+        <Text style={styles.headerSubtitle}>{conversations.length} active</Text>
       </View>
 
       {conversations.length === 0 ? (
         <View style={styles.emptyState}>
-          <IconSymbol name="message" size={64} color={colors.textLight} />
-          <Text style={styles.emptyText}>No conversations yet</Text>
-          <Text style={styles.emptySubtext}>Start chatting with your matches!</Text>
+          <IconSymbol name="message.fill" size={64} color={colors.textSecondary} />
+          <Text style={styles.emptyTitle}>No conversations yet</Text>
+          <Text style={styles.emptySubtitle}>
+            Start a conversation with your daily matches
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -115,56 +127,66 @@ export default function ConversationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
-    padding: 24,
-    paddingBottom: 16,
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   headerTitle: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
     color: colors.text,
   },
+  headerSubtitle: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 4,
+  },
   listContent: {
-    padding: 16,
+    paddingVertical: 8,
   },
   emptyState: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 80,
+    padding: 40,
   },
-  emptyText: {
+  emptyTitle: {
     fontSize: 20,
     fontWeight: '600',
     color: colors.text,
     marginTop: 16,
   },
-  emptySubtext: {
-    fontSize: 16,
-    color: colors.textLight,
+  emptySubtitle: {
+    fontSize: 14,
+    color: colors.textSecondary,
     marginTop: 8,
+    textAlign: 'center',
   },
   conversationItem: {
     flexDirection: 'row',
     padding: 16,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    alignItems: 'center',
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginRight: 16,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  avatarText: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
   },
   conversationContent: {
     flex: 1,
@@ -174,27 +196,37 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 4,
   },
-  conversationName: {
-    fontSize: 18,
+  userName: {
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
-  conversationTime: {
-    fontSize: 14,
-    color: colors.textLight,
+  timestamp: {
+    fontSize: 13,
+    color: colors.textSecondary,
   },
-  conversationMessage: {
-    fontSize: 16,
-    color: colors.textLight,
+  lastMessage: {
+    fontSize: 15,
+    color: colors.textSecondary,
   },
-  conversationMessageUnread: {
+  unreadMessage: {
     fontWeight: '600',
     color: colors.text,
   },
-  unreadBadge: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 4,
+  },
+  statusText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  unreadDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: colors.primary,
     marginLeft: 8,
   },

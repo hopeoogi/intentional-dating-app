@@ -1,6 +1,7 @@
+
 {
   "expo": {
-    "name": "Intentional",
+    "name": "Intentional Dating",
     "slug": "intentional-dating",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -10,54 +11,33 @@
     "splash": {
       "image": "./assets/images/natively-dark.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FF6B9D"
+      "backgroundColor": "#000000"
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.intentional.dating",
+      "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "We need access to your camera to take profile photos and videos.",
-        "NSPhotoLibraryUsageDescription": "We need access to your photo library to upload profile photos and videos.",
+        "NSPhotoLibraryUsageDescription": "We need access to your photo library to select profile photos and videos.",
         "NSLocationWhenInUseUsageDescription": "We use your location to show you matches nearby."
-      },
-      "config": {
-        "usesNonExemptEncryption": false
-      },
-      "associatedDomains": [
-        "applinks:intentional.dating"
-      ]
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/natively-dark.png",
-        "backgroundColor": "#FF6B9D"
+        "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.intentional.dating",
+      "versionCode": 1,
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"
-      ],
-      "intentFilters": [
-        {
-          "action": "VIEW",
-          "autoVerify": true,
-          "data": [
-            {
-              "scheme": "https",
-              "host": "intentional.dating",
-              "pathPrefix": "/auth"
-            }
-          ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
-        }
       ]
     },
     "web": {
@@ -72,24 +52,18 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Intentional to access your photos to upload profile pictures.",
-          "cameraPermission": "Allow Intentional to access your camera to take profile pictures."
+          "photosPermission": "Allow access to select profile photos",
+          "cameraPermission": "Allow access to take profile photos"
         }
       ],
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow Intentional to use your location to find matches nearby."
-        }
-      ],
-      [
-        "expo-apple-authentication",
-        {
-          "appleTeamId": "YOUR_APPLE_TEAM_ID"
+          "locationWhenInUsePermission": "Allow access to show nearby matches"
         }
       ]
     ],
-    "scheme": "intentional",
+    "scheme": "intentional-dating",
     "experiments": {
       "typedRoutes": true
     },
@@ -97,9 +71,8 @@
       "router": {
         "origin": false
       },
-      "backendUrl": "https://6ytjugugmhrw5w5dguny2u79uz83r3tz.app.specular.dev",
       "eas": {
-        "projectId": "your-project-id-here"
+        "projectId": "your-project-id"
       }
     }
   }

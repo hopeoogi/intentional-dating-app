@@ -1,50 +1,26 @@
 
 {
   "cli": {
-    "version": ">= 13.2.0"
+    "version": ">= 5.0.0"
   },
   "build": {
     "development": {
       "developmentClient": true,
       "distribution": "internal",
       "ios": {
-        "simulator": true,
-        "buildConfiguration": "Debug",
-        "resourceClass": "m-medium"
-      },
-      "android": {
-        "buildType": "apk",
-        "gradleCommand": ":app:assembleDebug"
-      },
-      "env": {
-        "EXPO_PUBLIC_BACKEND_URL": "https://6ytjugugmhrw5w5dguny2u79uz83r3tz.app.specular.dev"
+        "simulator": true
       }
     },
     "preview": {
       "distribution": "internal",
       "ios": {
-        "simulator": false,
-        "buildConfiguration": "Release",
-        "resourceClass": "m-medium"
-      },
-      "android": {
-        "buildType": "apk",
-        "gradleCommand": ":app:assembleRelease"
-      },
-      "env": {
-        "EXPO_PUBLIC_BACKEND_URL": "https://6ytjugugmhrw5w5dguny2u79uz83r3tz.app.specular.dev"
+        "simulator": false
       }
     },
     "production": {
+      "autoIncrement": true,
       "ios": {
-        "buildConfiguration": "Release",
-        "resourceClass": "m-medium"
-      },
-      "android": {
-        "buildType": "aab"
-      },
-      "env": {
-        "EXPO_PUBLIC_BACKEND_URL": "https://6ytjugugmhrw5w5dguny2u79uz83r3tz.app.specular.dev"
+        "simulator": false
       }
     }
   },
@@ -53,11 +29,7 @@
       "ios": {
         "appleId": "your-apple-id@example.com",
         "ascAppId": "your-asc-app-id",
-        "appleTeamId": "YOUR_APPLE_TEAM_ID"
-      },
-      "android": {
-        "serviceAccountKeyPath": "./path/to/api-key.json",
-        "track": "internal"
+        "appleTeamId": "your-team-id"
       }
     }
   }

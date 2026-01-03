@@ -2,11 +2,12 @@
 import "react-native-reanimated";
 import React, { useEffect } from "react";
 import { useFonts } from "expo-font";
-import { Stack, useRouter, useSegments } from "expo-router";
+import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useColorScheme } from "react-native";
+import { useColorScheme, Alert } from "react-native";
+import { useNetworkState } from "expo-network";
 import {
   DarkTheme,
   DefaultTheme,
@@ -14,83 +15,18 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { WidgetProvider } from "@/contexts/WidgetContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 SplashScreen.preventAutoHideAsync();
 
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-  const { user, loading } = useAuth();
-  const segments = useSegments();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (loading) return;
-
-    const inAuthGroup = segments[0] === "(auth)";
-    const inOnboarding = segments[0] === "onboarding";
-    const inTabs = segments[0] === "(tabs)";
-    const isWelcome = segments[0] === "welcome";
-    const isSignIn = segments[0] === "signin";
-
-    if (!user && !inAuthGroup && !isWelcome && !isSignIn && !inOnboarding) {
-      router.replace("/welcome");
-    } else if (user && (isWelcome || isSignIn)) {
-      router.replace("/(tabs)/discover");
-    }
-  }, [user, loading, segments]);
-
-  const CustomDefaultTheme: Theme = {
-    ...DefaultTheme,
-    dark: false,
-    colors: {
-      primary: "#FF6B9D",
-      background: "#FFFFFF",
-      card: "#FFFFFF",
-      text: "#333333",
-      border: "#E0E0E0",
-      notification: "#FF3B30",
-    },
-  };
-
-  const CustomDarkTheme: Theme = {
-    ...DarkTheme,
-    colors: {
-      primary: "#FF6B9D",
-      background: "#1A1A1A",
-      card: "#2C2C2C",
-      text: "#FFFFFF",
-      border: "#3C3C3C",
-      notification: "#FF3B30",
-    },
-  };
-
-  return (
-    <ThemeProvider
-      value={colorScheme === "dark" ? CustomDarkTheme : CustomDefaultTheme}
-    >
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="welcome" />
-          <Stack.Screen name="signin" />
-          <Stack.Screen name="onboarding/signup" />
-          <Stack.Screen name="onboarding/profile" />
-          <Stack.Screen name="onboarding/media" />
-          <Stack.Screen name="onboarding/verification" />
-          <Stack.Screen name="onboarding/subscription" />
-          <Stack.Screen name="onboarding/pending" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="conversation/[id]" />
-          <Stack.Screen name="conversation/new" />
-          <Stack.Screen name="profile/[id]" />
-        </Stack>
-        <SystemBars style="auto" />
-      </GestureHandlerRootView>
-    </ThemeProvider>
-  );
-}
+export const unstable_settings = {
+  initialRouteName: "index",
+};
 
 export default function RootLayout() {
+  const colorScheme = useColorScheme();
+  const networkState = useNetworkState();
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
@@ -101,16 +37,96 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
+  React.useEffect(() => {
+    if (
+      !networkState.isConnected &&
+      networkState.isInternetReachable === false
+    ) {
+      Alert.alert(
+        "🔌 You are offline",
+        "You can keep using the app! Your changes will be saved locally and synced when you are back online."
+      );
+    }
+  }, [networkState.isConnected, networkState.isInternetReachable]);
+
   if (!loaded) {
     return null;
   }
 
+  const CustomDefaultTheme: Theme = {
+    ...DefaultTheme,
+    dark: false,
+    colors: {
+      primary: "rgb(255, 107, 157)",
+      background: "rgb(255, 255, 255)",
+      card: "rgb(248, 248, 248)",
+      text: "rgb(51, 51, 51)",
+      border: "rgb(224, 224, 224)",
+      notification: "rgb(255, 59, 48)",
+    },
+  };
+
+  const CustomDarkTheme: Theme = {
+    ...DarkTheme,
+    colors: {
+      primary: "rgb(255, 107, 157)",
+      background: "rgb(26, 26, 26)",
+      card: "rgb(44, 44, 44)",
+      text: "rgb(255, 255, 255)",
+      border: "rgb(44, 44, 46)",
+      notification: "rgb(255, 69, 58)",
+    },
+  };
+
   return (
     <>
       <StatusBar style="auto" animated />
-      <AuthProvider>
-        <RootLayoutNav />
-      </AuthProvider>
+      <ThemeProvider
+        value={colorScheme === "dark" ? CustomDarkTheme : CustomDefaultTheme}
+      >
+        <AuthProvider>
+          <WidgetProvider>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="index" />
+                <Stack.Screen name="signin" />
+                <Stack.Screen name="signup" />
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="conversation/[id]" />
+                <Stack.Screen name="conversation/new" />
+                <Stack.Screen name="profile/[id]" />
+                <Stack.Screen name="onboarding/profile" />
+                <Stack.Screen name="onboarding/media" />
+                <Stack.Screen name="onboarding/verification" />
+                <Stack.Screen name="onboarding/subscription" />
+                <Stack.Screen
+                  name="modal"
+                  options={{
+                    presentation: "modal",
+                    headerShown: true,
+                    title: "Modal",
+                  }}
+                />
+                <Stack.Screen
+                  name="formsheet"
+                  options={{
+                    presentation: "formSheet",
+                    headerShown: true,
+                    title: "Form Sheet",
+                  }}
+                />
+                <Stack.Screen
+                  name="transparent-modal"
+                  options={{
+                    presentation: "transparentModal",
+                  }}
+                />
+              </Stack>
+              <SystemBars style="auto" />
+            </GestureHandlerRootView>
+          </WidgetProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </>
   );
 }

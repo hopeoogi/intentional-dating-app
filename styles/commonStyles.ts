@@ -8,6 +8,7 @@ export const colors = {
   backgroundDark: '#1A1A1A',
   text: '#333333',
   textLight: '#666666',
+  textSecondary: '#999999',
   textDark: '#FFFFFF',
   border: '#E0E0E0',
   error: '#FF3B30',

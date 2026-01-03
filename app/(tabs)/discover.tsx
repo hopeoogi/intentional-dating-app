@@ -1,5 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
+import { colors, commonStyles } from '@/styles/commonStyles';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { authenticatedGet } from '@/utils/api';
 import {
   View,
   Text,
@@ -11,11 +14,8 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { authenticatedGet } from '@/utils/api';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useRouter } from 'expo-router';
-import { colors, commonStyles } from '@/styles/commonStyles';
 
 interface Match {
   id: string;
@@ -41,24 +41,11 @@ export default function DiscoverScreen() {
   const loadDailyMatches = async () => {
     try {
       setLoading(true);
-      const data = await authenticatedGet('/api/matches');
-      console.log('[Discover] Loaded matches:', data);
-      
-      // Transform the API response to match our interface
-      const transformedMatches = (data.matches || []).map((match: any) => ({
-        id: match.id || match.userId,
-        name: match.name || 'Unknown',
-        age: match.age || 0,
-        location: match.location || 'Unknown',
-        bio: match.bio || '',
-        photos: match.photos || [],
-        status: match.status || 'unverified',
-      }));
-      
-      setMatches(transformedMatches);
-    } catch (error: any) {
-      console.error('[Discover] Failed to load matches:', error);
-      Alert.alert('Error', error.message || 'Failed to load matches');
+      const response = await authenticatedGet('/api/matches/daily');
+      setMatches(response.matches || []);
+    } catch (error) {
+      console.error('Failed to load matches:', error);
+      Alert.alert('Error', 'Failed to load daily matches');
     } finally {
       setLoading(false);
     }
@@ -74,117 +61,123 @@ export default function DiscoverScreen() {
 
   if (loading) {
     return (
-      <View style={commonStyles.centered}>
+      <SafeAreaView style={[commonStyles.container, styles.centered]}>
         <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={commonStyles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Today&apos;s Matches</Text>
-        <TouchableOpacity onPress={loadDailyMatches}>
-          <IconSymbol ios_icon_name="arrow.clockwise" android_material_icon_name="refresh" size={24} color={colors.text} />
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Today's Matches</Text>
+        <Text style={styles.headerSubtitle}>{matches.length} intentional connections</Text>
       </View>
 
-      {matches.length === 0 ? (
-        <View style={commonStyles.centered}>
-          <IconSymbol ios_icon_name="heart.slash" android_material_icon_name="favorite-border" size={64} color={colors.textLight} />
-          <Text style={styles.emptyTitle}>No Matches Today</Text>
-          <Text style={styles.emptyText}>
-            Check back tomorrow for new matches!
-          </Text>
-        </View>
-      ) : (
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          {matches.map((match) => (
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {matches.length === 0 ? (
+          <View style={styles.emptyState}>
+            <IconSymbol name="heart.fill" size={64} color={colors.textSecondary} />
+            <Text style={styles.emptyTitle}>No matches today</Text>
+            <Text style={styles.emptySubtitle}>Check back tomorrow for new connections</Text>
+          </View>
+        ) : (
+          matches.map((match) => (
             <View key={match.id} style={styles.matchCard}>
-              <TouchableOpacity
-                onPress={() => handleViewProfile(match.id)}
-                activeOpacity={0.9}
-              >
-                <Image
-                  source={{ uri: match.photos[0] || 'https://via.placeholder.com/400x500' }}
-                  style={styles.matchImage}
-                />
-                <View style={styles.matchInfo}>
-                  <View style={styles.matchHeader}>
-                    <Text style={styles.matchName}>{match.name}, {match.age}</Text>
-                    {match.status === 'verified' && (
-                      <IconSymbol ios_icon_name="checkmark.seal.fill" android_material_icon_name="verified" size={20} color={colors.primary} />
-                    )}
-                  </View>
-                  <View style={styles.locationRow}>
-                    <IconSymbol ios_icon_name="location.fill" android_material_icon_name="location-on" size={16} color={colors.textLight} />
-                    <Text style={styles.matchLocation}>{match.location}</Text>
-                  </View>
-                  <Text style={styles.matchBio} numberOfLines={2}>
-                    {match.bio}
-                  </Text>
+              <Image
+                source={{ uri: match.photos[0] || 'https://via.placeholder.com/400' }}
+                style={styles.matchImage}
+                resizeMode="cover"
+              />
+              <View style={styles.matchInfo}>
+                <View style={styles.matchHeader}>
+                  <Text style={styles.matchName}>{match.name}, {match.age}</Text>
+                  {match.status && (
+                    <View style={styles.statusBadge}>
+                      <Text style={styles.statusText}>{match.status}</Text>
+                    </View>
+                  )}
                 </View>
-              </TouchableOpacity>
-
-              <View style={styles.actions}>
-                <TouchableOpacity
-                  style={styles.viewButton}
-                  onPress={() => handleViewProfile(match.id)}
-                >
-                  <Text style={styles.viewButtonText}>View Profile</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.messageButton}
-                  onPress={() => handleStartConversation(match.id)}
-                >
-                  <IconSymbol ios_icon_name="paperplane.fill" android_material_icon_name="send" size={18} color="#FFFFFF" />
-                  <Text style={styles.messageButtonText}>Start Chat</Text>
-                </TouchableOpacity>
+                <Text style={styles.matchLocation}>{match.location}</Text>
+                <Text style={styles.matchBio} numberOfLines={3}>{match.bio}</Text>
+                
+                <View style={styles.actionButtons}>
+                  <TouchableOpacity
+                    style={styles.viewProfileButton}
+                    onPress={() => handleViewProfile(match.id)}
+                  >
+                    <Text style={styles.viewProfileText}>View Profile</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.startChatButton}
+                    onPress={() => handleStartConversation(match.id)}
+                  >
+                    <IconSymbol name="message.fill" size={20} color="#fff" />
+                    <Text style={styles.startChatText}>Start Conversation</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
-          ))}
-        </ScrollView>
-      )}
+          ))
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: colors.text,
   },
-  scrollContent: {
-    padding: 16,
+  headerSubtitle: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 4,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 80,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.text,
+    marginTop: 16,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 8,
   },
   matchCard: {
-    backgroundColor: '#FFFFFF',
+    margin: 16,
     borderRadius: 16,
-    marginBottom: 20,
+    backgroundColor: colors.card,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 3,
-    overflow: 'hidden',
+    elevation: 4,
   },
   matchImage: {
     width: '100%',
-    height: width * 1.2,
+    height: width - 32,
   },
   matchInfo: {
     padding: 16,
@@ -192,48 +185,54 @@ const styles = StyleSheet.create({
   matchHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
   matchName: {
     fontSize: 24,
     fontWeight: 'bold',
     color: colors.text,
-    marginRight: 8,
   },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
+  statusBadge: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
   matchLocation: {
     fontSize: 14,
-    color: colors.textLight,
-    marginLeft: 4,
+    color: colors.textSecondary,
+    marginBottom: 12,
   },
   matchBio: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.text,
-    lineHeight: 20,
+    lineHeight: 22,
+    marginBottom: 16,
   },
-  actions: {
+  actionButtons: {
     flexDirection: 'row',
-    padding: 16,
     gap: 12,
   },
-  viewButton: {
+  viewProfileButton: {
     flex: 1,
     paddingVertical: 12,
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.primary,
     alignItems: 'center',
   },
-  viewButtonText: {
+  viewProfileText: {
     color: colors.primary,
     fontSize: 16,
     fontWeight: '600',
   },
-  messageButton: {
+  startChatButton: {
     flex: 1,
     flexDirection: 'row',
     paddingVertical: 12,
@@ -243,22 +242,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  messageButtonText: {
-    color: '#FFFFFF',
+  startChatText: {
+    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: colors.text,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: colors.textLight,
-    textAlign: 'center',
-    paddingHorizontal: 40,
   },
 });
