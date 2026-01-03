@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,13 +8,10 @@ import {
   ScrollView,
   Image,
   Alert,
-  Platform,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
-import { IconSymbol } from '@/components/IconSymbol';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { BACKEND_URL, getBearerToken } from '@/utils/api';
 
@@ -28,10 +25,10 @@ export default function MediaScreen() {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const pickImage = useCallback(async () => {
+  const pickMedia = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Please allow access to your photo library');
+      Alert.alert('Permission needed', 'Please grant camera roll permissions');
       return;
     }
 
@@ -43,114 +40,61 @@ export default function MediaScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0];
-      setMedia([
-        ...media,
-        {
-          uri: asset.uri,
-          type: asset.type === 'video' ? 'video' : 'photo',
-        },
-      ]);
+      const newMedia: MediaItem = {
+        uri: result.assets[0].uri,
+        type: result.assets[0].type === 'video' ? 'video' : 'photo',
+      };
+      setMedia([...media, newMedia]);
     }
-  }, [media]);
+  };
 
-  const takePhoto = useCallback(async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Please allow access to your camera');
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [3, 4],
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      setMedia([
-        ...media,
-        {
-          uri: result.assets[0].uri,
-          type: 'photo',
-        },
-      ]);
-    }
-  }, [media]);
-
-  const removeMedia = useCallback((index: number) => {
+  const removeMedia = (index: number) => {
     setMedia(media.filter((_, i) => i !== index));
-  }, [media]);
+  };
 
-  const handleContinue = useCallback(async () => {
+  const handleContinue = async () => {
     if (media.length < 2) {
-      Alert.alert('More Photos Needed', 'Please upload at least 2 photos or videos to continue');
+      Alert.alert('More photos needed', 'Please upload at least 2 photos');
       return;
     }
 
     try {
       setLoading(true);
-      console.log('[Media] Uploading media files:', media.length);
-
-      // TODO: Backend Integration - Upload each media file to the backend API
+      const token = await getBearerToken();
+      
+      // Upload each media item
       for (const item of media) {
         const formData = new FormData();
-        
-        // Create file object from URI
-        const filename = item.uri.split('/').pop() || 'media';
-        const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `${item.type}/${match[1]}` : item.type;
-
         formData.append('file', {
           uri: item.uri,
-          name: filename,
-          type,
+          type: item.type === 'video' ? 'video/mp4' : 'image/jpeg',
+          name: `media_${Date.now()}.${item.type === 'video' ? 'mp4' : 'jpg'}`,
         } as any);
 
-        const endpoint = item.type === 'photo' ? '/api/profile/photos' : '/api/profile/videos';
-        
-        const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+        const endpoint = item.type === 'video' ? '/api/profile/videos' : '/api/profile/photos';
+        await fetch(`${BACKEND_URL}${endpoint}`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${await getBearerToken()}`,
+            Authorization: `Bearer ${token}`,
           },
           body: formData,
         });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`[Media] Failed to upload ${item.type}:`, response.status, errorText);
-          throw new Error(`Failed to upload ${item.type}`);
-        }
-
-        const result = await response.json();
-        console.log(`[Media] ${item.type} uploaded successfully:`, result);
       }
 
-      console.log('[Media] All media uploaded successfully');
       router.push('/onboarding/verification');
-    } catch (error) {
-      console.error('[Media] Media upload error:', error);
-      Alert.alert('Upload Failed', 'Failed to upload media. Please check your connection and try again.');
+    } catch (error: any) {
+      Alert.alert('Upload Failed', error.message || 'Please try again');
     } finally {
       setLoading(false);
     }
-  }, [media, router]);
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Image
-            source={require('@/assets/images/96e0c1f0-fcef-4b76-b942-74280a3296cb.png')}
-            style={styles.headerLogo}
-            resizeMode="contain"
-          />
-          <Text style={commonStyles.title}>Add Photos & Videos</Text>
-          <Text style={commonStyles.subtitle}>
-            Upload at least 2 photos or videos. Quality matters!
-          </Text>
-          <Text style={styles.stepText}>Step 2 of 4</Text>
+          <Text style={styles.title}>Add Photos & Videos</Text>
+          <Text style={styles.subtitle}>Upload at least 2 photos (max 6)</Text>
         </View>
 
         <View style={styles.mediaGrid}>
@@ -161,83 +105,26 @@ export default function MediaScreen() {
                 style={styles.removeButton}
                 onPress={() => removeMedia(index)}
               >
-                <IconSymbol
-                  ios_icon_name="xmark.circle.fill"
-                  android_material_icon_name="cancel"
-                  size={28}
-                  color="#FFFFFF"
-                />
+                <Text style={styles.removeButtonText}>✕</Text>
               </TouchableOpacity>
-              {item.type === 'video' && (
-                <View style={styles.videoIndicator}>
-                  <IconSymbol
-                    ios_icon_name="play.circle.fill"
-                    android_material_icon_name="play-circle-filled"
-                    size={32}
-                    color="#FFFFFF"
-                  />
-                </View>
-              )}
             </View>
           ))}
-
           {media.length < 6 && (
-            <TouchableOpacity style={styles.addButton} onPress={pickImage}>
-              <IconSymbol
-                ios_icon_name="plus"
-                android_material_icon_name="add"
-                size={32}
-                color={colors.primary}
-              />
-              <Text style={styles.addButtonText}>Add Media</Text>
+            <TouchableOpacity style={styles.addButton} onPress={pickMedia}>
+              <Text style={styles.addButtonText}>+</Text>
             </TouchableOpacity>
           )}
         </View>
 
-        <View style={styles.actions}>
-          <TouchableOpacity style={styles.actionButton} onPress={takePhoto}>
-            <IconSymbol
-              ios_icon_name="camera.fill"
-              android_material_icon_name="camera"
-              size={24}
-              color={colors.primary}
-            />
-            <Text style={styles.actionButtonText}>Take Photo</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionButton} onPress={pickImage}>
-            <IconSymbol
-              ios_icon_name="photo.fill"
-              android_material_icon_name="photo"
-              size={24}
-              color={colors.primary}
-            />
-            <Text style={styles.actionButtonText}>Choose from Library</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.requirements}>
-          <Text style={styles.requirementsTitle}>Photo Requirements:</Text>
-          <Text style={styles.requirementItem}>• Clear face photos</Text>
-          <Text style={styles.requirementItem}>• No group photos as primary</Text>
-          <Text style={styles.requirementItem}>• No filters or heavy editing</Text>
-          <Text style={styles.requirementItem}>• Recent photos only</Text>
-        </View>
-
         <TouchableOpacity
-          style={[
-            buttonStyles.primary,
-            (loading || media.length < 2) && styles.buttonDisabled,
-          ]}
+          style={[styles.button, (loading || media.length < 2) && styles.buttonDisabled]}
           onPress={handleContinue}
           disabled={loading || media.length < 2}
         >
           {loading ? (
-            <ActivityIndicator color="#FFFFFF" />
+            <ActivityIndicator color="#FFF" />
           ) : (
-            <Text style={commonStyles.buttonText}>
-              Continue ({media.length}/6)
-            </Text>
+            <Text style={styles.buttonText}>Continue</Text>
           )}
         </TouchableOpacity>
       </ScrollView>
@@ -248,40 +135,37 @@ export default function MediaScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#F5F5F5',
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 20,
+    padding: 20,
   },
   header: {
     marginBottom: 32,
-    alignItems: 'center',
   },
-  headerLogo: {
-    width: 50,
-    height: 50,
-    marginBottom: 16,
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
   },
-  stepText: {
-    fontSize: 14,
-    color: '#7F8C8D',
-    marginTop: 8,
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
   },
   mediaGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 24,
+    justifyContent: 'space-between',
+    marginBottom: 32,
   },
   mediaItem: {
     width: '48%',
     aspectRatio: 3 / 4,
+    marginBottom: 16,
     borderRadius: 12,
     overflow: 'hidden',
-    position: 'relative',
   },
   mediaImage: {
     width: '100%',
@@ -291,72 +175,46 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 14,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  videoIndicator: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: [{ translateX: -16 }, { translateY: -16 }],
+  removeButtonText: {
+    color: '#FFF',
+    fontSize: 20,
+    fontWeight: 'bold',
   },
   addButton: {
     width: '48%',
     aspectRatio: 3 / 4,
+    marginBottom: 16,
     borderRadius: 12,
+    backgroundColor: '#FFF',
     borderWidth: 2,
-    borderColor: colors.border,
+    borderColor: '#DDD',
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.card,
   },
   addButtonText: {
-    marginTop: 8,
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary,
+    fontSize: 48,
+    color: '#999',
   },
-  actions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
+  button: {
+    backgroundColor: '#007AFF',
+    borderRadius: 12,
+    padding: 18,
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingVertical: 14,
-    gap: 8,
-  },
-  actionButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  requirements: {
-    backgroundColor: colors.highlight,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
-  },
-  requirementsTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 8,
-  },
-  requirementItem: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 4,
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  buttonText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: '600',
   },
 });

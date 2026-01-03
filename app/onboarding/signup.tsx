@@ -10,68 +10,74 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  Image,
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SignUpScreen() {
   const router = useRouter();
   const { signUpWithEmail } = useAuth();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    phone: '',
-  });
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleContinue = useCallback(async () => {
-    console.log('[SignUp] Starting signup process');
-    
+  const handleSignUp = useCallback(async () => {
     // Validation
-    if (!formData.email || !formData.password || !formData.phone) {
+    if (!email || !password || !phone) {
       Alert.alert('Missing Information', 'Please fill in all fields');
       return;
     }
 
-    if (formData.password !== formData.confirmPassword) {
+    if (password !== confirmPassword) {
       Alert.alert('Password Mismatch', 'Passwords do not match');
       return;
     }
 
-    if (formData.password.length < 8) {
+    if (password.length < 8) {
       Alert.alert('Weak Password', 'Password must be at least 8 characters');
       return;
     }
 
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
+    if (!emailRegex.test(email)) {
       Alert.alert('Invalid Email', 'Please enter a valid email address');
       return;
     }
 
     try {
       setLoading(true);
-      console.log('[SignUp] Creating account for:', formData.email);
+      console.log('[SignUp] Starting signup process...');
       
-      // TODO: Backend Integration - Create user account with email and phone
-      await signUpWithEmail(formData.email, formData.password);
+      // TODO: Backend Integration - Create user account with email and password
+      await signUpWithEmail(email, password);
       
-      console.log('[SignUp] Account created successfully, navigating to profile');
+      console.log('[SignUp] Signup successful, navigating to profile...');
       
-      // Navigate to profile setup
-      router.push('/onboarding/profile');
+      // Small delay to ensure token is stored
+      setTimeout(() => {
+        router.push('/onboarding/profile');
+      }, 500);
     } catch (error: any) {
-      console.error('[SignUp] Sign up error:', error);
-      Alert.alert('Sign Up Failed', error.message || 'Please try again');
+      console.error('[SignUp] Signup failed:', error);
+      
+      let errorMessage = 'Unable to create account. Please try again.';
+      
+      if (error.message.includes('already exists') || error.message.includes('duplicate')) {
+        errorMessage = 'An account with this email already exists. Please sign in instead.';
+      } else if (error.message.includes('Network')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      }
+      
+      Alert.alert('Sign Up Failed', errorMessage);
     } finally {
       setLoading(false);
     }
-  }, [formData, signUpWithEmail, router]);
+  }, [email, password, confirmPassword, phone, signUpWithEmail, router]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -79,87 +85,77 @@ export default function SignUpScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <ScrollView
+        <ScrollView 
           contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Header */}
           <View style={styles.header}>
-            <Image
-              source={require('@/assets/images/96e0c1f0-fcef-4b76-b942-74280a3296cb.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
             <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Join our intentional dating community</Text>
+            <Text style={styles.subtitle}>Join the Intentional community</Text>
           </View>
 
-          {/* Form */}
           <View style={styles.form}>
-            <Text style={styles.label}>Email</Text>
+            <Text style={styles.label}>Email *</Text>
             <TextInput
               style={styles.input}
               placeholder="your@email.com"
               placeholderTextColor="#999"
-              value={formData.email}
-              onChangeText={(text) => setFormData({ ...formData, email: text })}
+              value={email}
+              onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
-              autoCorrect={false}
+              editable={!loading}
             />
 
-            <Text style={styles.label}>Phone Number</Text>
+            <Text style={styles.label}>Phone Number *</Text>
             <TextInput
               style={styles.input}
               placeholder="+1 (555) 123-4567"
               placeholderTextColor="#999"
-              value={formData.phone}
-              onChangeText={(text) => setFormData({ ...formData, phone: text })}
+              value={phone}
+              onChangeText={setPhone}
               keyboardType="phone-pad"
+              editable={!loading}
             />
 
-            <Text style={styles.label}>Password</Text>
+            <Text style={styles.label}>Password *</Text>
             <TextInput
               style={styles.input}
               placeholder="At least 8 characters"
               placeholderTextColor="#999"
-              value={formData.password}
-              onChangeText={(text) => setFormData({ ...formData, password: text })}
+              value={password}
+              onChangeText={setPassword}
               secureTextEntry
-              autoCapitalize="none"
+              editable={!loading}
             />
 
-            <Text style={styles.label}>Confirm Password</Text>
+            <Text style={styles.label}>Confirm Password *</Text>
             <TextInput
               style={styles.input}
               placeholder="Re-enter password"
               placeholderTextColor="#999"
-              value={formData.confirmPassword}
-              onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
               secureTextEntry
-              autoCapitalize="none"
+              editable={!loading}
             />
 
-            <Text style={styles.disclaimer}>
-              By continuing, you agree to our Terms of Service and Privacy Policy
-            </Text>
-
             <TouchableOpacity
-              style={[styles.continueButton, loading && styles.buttonDisabled]}
-              onPress={handleContinue}
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={handleSignUp}
               disabled={loading}
             >
               {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color="#FFF" />
               ) : (
-                <Text style={styles.continueButtonText}>Continue</Text>
+                <Text style={styles.buttonText}>Continue</Text>
               )}
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.backButton}
               onPress={() => router.back()}
+              disabled={loading}
             >
               <Text style={styles.backButtonText}>Already have an account? Sign In</Text>
             </TouchableOpacity>
@@ -173,87 +169,68 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F5F5F5',
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 24,
+    padding: 20,
   },
   header: {
-    alignItems: 'center',
     marginBottom: 32,
   },
-  logo: {
-    width: 70,
-    height: 70,
-    marginBottom: 16,
-  },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#2C3E50',
+    color: '#333',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#7F8C8D',
-    textAlign: 'center',
+    color: '#666',
   },
   form: {
     flex: 1,
   },
   label: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#2C3E50',
+    color: '#333',
     marginBottom: 8,
-    marginTop: 16,
   },
   input: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#DDD',
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#2C3E50',
-    borderWidth: 1,
-    borderColor: '#E1E8ED',
+    marginBottom: 20,
+    color: '#333',
   },
-  disclaimer: {
-    fontSize: 12,
-    color: '#7F8C8D',
-    textAlign: 'center',
-    marginTop: 24,
-    lineHeight: 18,
-  },
-  continueButton: {
-    backgroundColor: '#5B4FE9',
+  button: {
+    backgroundColor: '#007AFF',
     borderRadius: 12,
     padding: 18,
     alignItems: 'center',
-    marginTop: 24,
-    shadowColor: '#5B4FE9',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    marginTop: 8,
   },
   buttonDisabled: {
     opacity: 0.6,
   },
-  continueButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+  buttonText: {
+    color: '#FFF',
+    fontSize: 18,
     fontWeight: '600',
   },
   backButton: {
-    marginTop: 16,
+    marginTop: 20,
     alignItems: 'center',
   },
   backButtonText: {
-    color: '#5B4FE9',
-    fontSize: 14,
+    color: '#007AFF',
+    fontSize: 16,
   },
 });

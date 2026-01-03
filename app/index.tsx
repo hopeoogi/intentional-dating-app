@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ImageBackground, Image } from 'react-native';
+import { View, Text, StyleSheet, ImageBackground } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -27,11 +27,6 @@ export default function WelcomeScreen() {
         style={styles.overlay}
       >
         <View style={styles.logoContainer}>
-          <Image
-            source={require('@/assets/images/96e0c1f0-fcef-4b76-b942-74280a3296cb.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
           <Text style={styles.appName}>Intentional</Text>
           <Text style={styles.tagline}>Meaningful Connections</Text>
         </View>
@@ -51,11 +46,6 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-  },
-  logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 32,
   },
   appName: {
     fontSize: 56,
