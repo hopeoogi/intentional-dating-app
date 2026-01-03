@@ -25,15 +25,9 @@ module.exports = {
   settings: {
     'import/resolver': {
       node: {
-        extensions: ['.js', '.jsx', '.ts', '.tsx', '.json']
+        extensions: ['.js', '.jsx', '.ts', '.tsx']
       }
-    },
-    'import/ignore': [
-      'react-native',
-      'expo-router/unstable-native-tabs',
-      '@better-auth/expo',
-      'better-auth'
-    ]
+    }
   },
   rules: {
     "@typescript-eslint/no-unused-vars": "off",
@@ -47,9 +41,9 @@ module.exports = {
     "react/no-unescaped-entities": "off",
     "import/no-unresolved": ["error", {
       ignore: [
-        'expo-router/unstable-native-tabs',
-        '@better-auth/expo',
-        'better-auth'
+        '^expo-glass-effect$',
+        '^expo-haptics$',
+        '^@bacons/apple-targets$'
       ]
     }],
     "prefer-const": "off",
@@ -63,7 +57,7 @@ module.exports = {
   },
   overrides: [
     {
-      files: ['metro.config.js', 'babel.config.js'],
+      files: ['metro.config.js', 'babel.config.js', '*.config.js'],
       env: {
         node: true
       },
